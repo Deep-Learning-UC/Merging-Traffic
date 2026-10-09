@@ -1,0 +1,27 @@
+meeting 3 10/9/26 Friday
+
+ - personality for each car
+   - personality would have to be something we add onto it. we design it
+   - snapshots need to be frequent enough - higher fps
+ - change lanes after some time
+ - penalize a lot if it hits car
+ - different vehicle types - possible something we do later (e.g. trucks)
+ - use documentation models as base, tweak them with additional 
+ - define MVP, finish 1-2/2-3 weeks before the end, we add one more stuff until we get to that 1-3 week buffer
+ - last week 11/30-12/5, 7 weeks including next week
+ - MVP by mid november
+ - risky/nonrisky drivers
+ - training doesn't have to be 100% merging
+ - MVP - model that can merge in the highway, travel a certain distance, and change line - 80%, and merge out
+ - additional things if we get MVP done: adding personality to driver and other surrounding, comparing models performances, vehicle types
+ - 11/15 is 5 weeks and some from today
+ - action items: set up simulation / explore library, add models, 
+ - Abhi and jace: figure out library
+ - connor: list and analyze models
+ - aarohi: models
+ - Eli: do whatever he wants
+ - split into teams by library/models, meet within teams then block 2-3 hours for us to work on this
+ - eli can do research too
+ - library team: focus on understanding how the library works, getting some visuals up, and a design of the highway
+ - model: how a model works, how it interfaces with the library 
+ - next monday 10/19 next meeting, 300pm

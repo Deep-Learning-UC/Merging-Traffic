@@ -2,6 +2,8 @@ import gymnasium
 import highway_env
 from matplotlib import pyplot as plt
 
+# copy pasted from highway_env documentation
+
 env = gymnasium.make('highway-v0', render_mode='rgb_array')
 env.reset()
 for _ in range(3):

@@ -37,8 +37,6 @@ so we need a list of models
  - i would imagine highway-env is built on top of it
  
 
-
-
 # research paper - Deep Reinforcement Learning for Autonomous Driving - Wang, Jia, Weng
  - https://arxiv.org/pdf/1811.11329
  - DDPG model / algorithm
