@@ -6,10 +6,8 @@ see for exmample - https://colab.research.google.com/github/Farama-Foundation/Hi
 import gymnasium
 import highway_env
 from stable_baselines3 import DQN
-from tqdm.notebook import trange
 # from utils import show_videos
 from gymnasium.wrappers import RecordVideo
-import IProgress
 import matplotlib.pyplot as plt
 
 """
@@ -54,7 +52,7 @@ model = DQN('MlpPolicy', env,
 # Load and test saved model
 model = DQN.load("highway_dqn/model")
 # while True:
-for episode in range(3): # need to import IProgress
+for episode in range(3):
     env = RecordVideo(env, video_folder="videos", name_prefix=f"rl-{episode}-video")
     done = truncated = False
     obs, info = env.reset()
