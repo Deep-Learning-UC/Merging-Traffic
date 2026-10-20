@@ -9,7 +9,7 @@ I wanted to move these out of the README, but I didn't want to get rid of them.
 
 first let's test with a non DRL model
 
-# Model List List
+# Model List
 - A2C (x2)
 - ARS
 - CrossQ
