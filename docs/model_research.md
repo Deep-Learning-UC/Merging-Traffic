@@ -10,6 +10,39 @@ I wanted to move these out of the README, but I didn't want to get rid of them.
 first let's test with a non DRL model
 
 # Models in Stable Baselines 3
+Total List:
+- A2C (x2)
+- ARS
+- CrossQ
+- DDPG (x2)
+- DQN (x3)
+- DroQ
+- HER (x2)
+- Maskable PPO
+- PPO
+- QR-DQN
+- RecurrentPPO
+- SAC
+- SAC-N
+- SimBa
+- TD3
+- TQC
+- TRPO (x2)
+- VI
+- CEM
+- MCTS
+- RVI
+- DROP
+- IRP
+- FTQ
+- BFTQ
+- ACER
+- ACKTR
+- GAIL
+- PPO1 (obsolete)
+- PPO2
+
+
 https://github.com/DLR-RM/stable-baselines3/blob/master/README.md?plain=1
 
 YUP = mentioned by Claude
