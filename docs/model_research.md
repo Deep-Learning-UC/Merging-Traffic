@@ -1,3 +1,10 @@
+I wanted to move these out of the README, but I didn't want to get rid of them. 
+`python -m venv .venv` -> create virtual environment named `.venv`  
+`. ./.venv/Scripts/activate` -> activate virtual environment  
+`pip freeze > requirements.txt` -> output dependencies into static `requirements.txt` file  
+`pip install -r requirements.txt` -> install requirements  
+
+
 **Goal:** Find two deep reinforcement learning models that can integrate with highway env, and how to integrate them with highway env
 
 first let's test with a non DRL model
