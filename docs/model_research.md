@@ -9,8 +9,7 @@ I wanted to move these out of the README, but I didn't want to get rid of them.
 
 first let's test with a non DRL model
 
-# Models in Stable Baselines 3
-Total List:
+# Model List List
 - A2C (x2)
 - ARS
 - CrossQ
@@ -43,6 +42,7 @@ Total List:
 - PPO2
 
 
+# Models in Stable Baseline3
 https://github.com/DLR-RM/stable-baselines3/blob/master/README.md?plain=1
 
 YUP = mentioned by Claude
