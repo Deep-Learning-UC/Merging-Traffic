@@ -1,3 +1,5 @@
 .venv/*
 .venv
 videos/*
+docs/__pycache__/
+docs/__pycache__/*
