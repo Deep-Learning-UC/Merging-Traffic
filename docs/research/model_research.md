@@ -44,6 +44,8 @@ first let's test with a non DRL model
 - PPO1 (obsolete)
 - PPO2
 
+A2C, ARS, CrossQ, DDPG, DQN, DroQ, HER, Maskable PPO, PPO, QR-DQN, RecurrentPPO, SAC, SAC-N, SimBa, TD3, TQC, TRPO, VI, CEM, MCTS, RVI, DROP, IRP, FTQ, BFTQ, ACER, ACKTR, GAIL, PPO1 (obsolete?), PPO2
+
 
 # Models in Stable Baseline3
 https://github.com/DLR-RM/stable-baselines3/blob/master/README.md?plain=1
