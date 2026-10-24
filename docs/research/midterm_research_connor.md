@@ -56,7 +56,7 @@ on 10/20/22 after the meeting, she popped the midterm report that introduced req
 
 claude sonnet 5.5 medium effort
 
-## Prompt 1
+## Prompt 1 Initial Problem
 
 Context: 
 Hello, our team project for our Deep Learning university class has encountered a problem. 
@@ -74,7 +74,7 @@ Questions:
 4) Do you have any general advice as we continue with our project?
 
 
-## Response 1
+## Response 1 Initial Problem
 
 I'll check what's been published recently so the paper list is current.
 
@@ -140,7 +140,7 @@ Your scenario stays valid. Every algorithm above is general-purpose, and highway
 
 If you tell me your timeline, team size and whether your merge-and-exit environment is custom, I can help you narrow this to a concrete model list and a research question.
 
-## Summary 1 and follow-up questions
+## Summary 1 Initial Problem and follow-up questions
  - Current models to investigate
    - PPO+
    - ExO-PPo
@@ -172,7 +172,7 @@ If you tell me your timeline, team size and whether your merge-and-exit environm
    - Research those models / highway merging papers
 
 
-## Prompt 2
+## Prompt 2 Additional context and foundational DRL
 
 Additional Context:
   - We are assigned to research 5 state-of-the-art models in a week - if we choose to benchmark we will benchmark those 5 models. This is the midterm progress report. 
@@ -189,7 +189,7 @@ Questions:
 3) How does a DRL implementation generally work, at a high-level? A code example would be greatly appreciated.  
 
 
-## Response 2
+## Response 2 Additional context and foundational DRL
 
 I'll write two code files you can read through. They're untested, so expect small version fixes.
 
@@ -294,7 +294,7 @@ With 5 people, one week to select five 2026 models, and a demo roughly 6 weeks o
 
 I can help you choose the five 2026 models with a quick check of which have code. I can also help you define the metrics for the midterm report.
 
-## Summary 2
+## Summary 2 Additional context and foundational DRL
 
  - I think I understand the core idea, and what makes RL DRL, but I don't know how the actions, policies, values, and states are represented, so it's difficult to picture it
  - the history kinda went over my head, but I just need to know DQN is the big start in 2013-2015
@@ -313,7 +313,7 @@ I can help you choose the five 2026 models with a quick check of which have code
   - then specifically how PPO and SAC works
  
 
-## Prompt 3
+## Prompt 3 Clarify foundational DRL
 
 Those questions might've been too loaded, a lot of it went over my head. I'll start with trying to understand RL/DRL.
 
@@ -322,7 +322,7 @@ To try to clarify, a state is what the agent is in, the action is what the agent
 Could you also give one or two simple examples?
 
 
-## Response 3
+## Response 3 Clarify foundational DRL
 
 You have the state and action right. The reward, V and Q are where it gets slightly tangled.
 
@@ -371,7 +371,7 @@ In the corridor you could write V and Q in a small table. In highway driving, th
 
 If you'd like, I can follow up with a short exercise like computing Q-values by hand on a slightly bigger grid, or explain how the agent learns these numbers by trial and error.
 
-## Summary 3 and Prompt 4
+## Summary 3 and Prompt 4 Clarify foundational DRL and Check understanding foundational DRL
   
 My Understanding:
  - Okay, reward is from the environment and its what we specify. It's tied to specific states? So if I'm in a car on a typical, non-problematic state, take an action (turn left) and crash (new state), because I crashed I get a reward of -10. We - the designers of the environment - determine what those rewards are
@@ -382,7 +382,7 @@ My Understanding:
  - What does a policy look like? 
  - What does the learning process look like from beginning to end? What does the environment look like? the model presumably starts from nothing, how does it learn a policy, V(s), etc.?
 
-## Response 4
+## Response 4 Check understanding foundational DRL
 
  Your reward and value ideas are mostly right, with two small corrections below.
 
@@ -456,7 +456,7 @@ You'll plot the average reward per episode over time, which rises as it learns. 
 
 I can write a tiny runnable version of this corridor learning (about 20 lines, no neural networks) so you can watch the Q-values fill in. It's a good way to make this feel concrete before moving on to the deep versions.
 
- ## Summary 4 and Prompt 5
+ ## Summary 4 and Prompt 5 Check understanding foundational DRL and step by step DRL example
 
  So an example of an episode in the tiny corridor
 
@@ -480,7 +480,7 @@ I can write a tiny runnable version of this corridor learning (about 20 lines, n
 
  Is this correct?
 
-## Response 5
+## Response 5 Step by step DRL example
 
 Yes, your trace is correct, including the order of the updates. You also handled the +10 step properly: the goal ends the episode, so there's no future term, and Q(C, right) = 10 + 0.9 × 0 = 10. What you've worked out by hand is **Q-learning**, the tabular ancestor of DQN.
 
@@ -507,15 +507,16 @@ Next I could write the runnable tabular version of your corridor, with the print
 Okay, so in a real environment, the Qs for each state gets updated gradually over time per the learning rate alpha. 
 
 what are some common metrics associated with DRL? How do you evaluate models?
+(above not prompted accidentally)
 
 So, I think we can try to start understanding DQN? and ask what Bellman's equation is 
 
 
-## Prompt 6
+## Prompt 6 DQN and Bellman
 
 Okay, I think I get what simple RL generally looks like. can you explain what Bellman's equation is? and what DQN is at a high level? Also with a simple example. 
 
-## Response 6
+## Response 6 DQN and Bellman
 
 ## Bellman's equation
 
@@ -578,6 +579,501 @@ Both appear in `dqn_from_scratch.py` as `ReplayBuffer` and `q_target`.
 
 Next, I could walk through the PPO or policy-gradient idea in the same style, since it's the main alternative to Q-learning and would be one of your benchmarks. Or I can write the runnable tabular corridor so you can see the Bellman updates in action first. Tell me which sounds more useful.
 
-## Summary 6
+## Summary 6 DQN and Bellman (and TDL 2)
 
-Explain Bellman's equation and DQN
+(not prompted)
+TDL 
+- acquire baseline understand of DRL
+  - what are the metrics
+  - understand the core models in the various family of functions
+    - *DQN - Q learning
+    - PPO - policy gradient 
+    - SAC - off-policy actor-critic
+- research
+  - Starting points: 
+    - PPO+, 
+    - ExO-PPO, 
+    - Off-policy Distributional Q(lambda), 
+    - Reversal Q-learning, and 
+    - SimBa. 
+    - NOTE: But first check if they do not contain public repos or have an implementation somewhere. We cannot implement them if they do not contain public repos. The five models we need to consider should have implementations somewhere.
+      - NOTE: possible implementations include: Stable-Baselines3, SB3-Contrib, and SBX. But recent models are likely not be included in libraries.
+- finish assignment
+
+In other words:
+1) Bellman's equation is how to find the estimate of `Q` - which is `Q*`. 
+2) `Q` is the return of an action in a particular state. 
+3) Return is the sum of max future rewards possible, while you are in a state
+4) You estimate `Q` by taking the current reward `r` of taking an action `a` in state `s`, and adding a discounted (discounted because applying `lambda`) max reward of the new state `s'`, represented by `max Q*(s', a')`. In all, `Q*(s,a) = r + lambda * max Q*(s', .)`.
+5) `max Q*(s', .)` approximates `V*(s)` 
+6) `V*(s)` is the estimate of `V(s)`
+7) `V(s)` is the maximum return of being in s. 
+
+When you say Bellman's equation is a consistency check, the LHS of the equation is what the model currently thinks Q is, but when it takes that action in s, it calculates the RHS and updates its knowledge accordingly. The RHS may not always be accurate (particularly when it isn't familiar with the new state s'), but it will eventually approach the truth over (potentially) many episodes. This is also why it's a recipe for learning. I can see why this is a foundational equation for DRL. 
+
+For DQN:
+1) The previous process involves storing `Q(s,a)` (or what the model thinks `Q(s,a)` is) for every possible action in every possible state, which is a significant memory overhead, and unfeasble for situations such as automated driving (with many states that have each have many actions).
+2) DQN improves on that process, by replacing that table with a deep neural network that learns `Q(s,a)` from `s`, with a predefined set of actions `a` in each state. The input is a state, the output is the Q of each action in that state. 
+3) Thus, if `a` is continuous or varies between states (such that two states may have different sets of actions), DQN may not be the appropriate model
+4) DQN uses the two sides of Bellman's equation, LHS: `Q(s,a)` and RHS: `r + lambda * max Q(s', .)` to compute the loss. The LHS is the current prediction (`y-hat`), the RHS is the target or label or ground truth (`y`).
+5) The most naive way to apply neural network + Q learning is to train on every new subsequent state. The main problems with this are 1) a skewed distribution in the variance of states (consecutive states tend to be similar), and 2) that the agent doesn't actually *know* the target, and the target changes with learning. 
+6) The first point 1) is addressed in DQN with a replay buffer, where the agent accumulates every transition into a memory (replay buffer), and trains on mini-batches from its remembered tranistions instead of consecutive states.
+7) Transitions consist of (s, a, r, s', done), which are the prior state, the current action, the reward of that action, the new state, and whether the agent accomplished the goal, which is defined by the environment (e.g. in the corridor example, making it to the last room). These are all the variables that the neural network needs to predict Q. 
+8) The second point 2) is addressed by creating a duplicate network that computes the target, and gets updated significantly less frequently. This allows the target to be static enough for loss to be calculated without the DQN chasing its own tail. Thus, the first network computes `Q(s,a)` when making a prediction (`y-hat`), and the second frozen networks computes `max Q(s, .)` when computing the target `y` when computing the loss. 
+
+Follow-up questions for DQN:
+1) When every transition is stored in the replay buffer, isn't there still a higher proportion of very similar states (e.g. the car is driving and isn't near anyone), which adds bias to training? Or is the original problem not the proporition of similar states but their consecutive nature?
+2) Isn't the storage of transitions in the replay buffer a significant memory overhead? Or is there a limit to the amount of transitions that it stores, where it only keeps the X most recent (or highest value?) transitions?
+3) What activation functions does the network in DQN typically use? ReLU? And I assume it uses softmax to compute the output?
+
+
+## Prompt 7 Clarify DQN and Bellman
+
+In other words:
+1) Bellman's equation is how to find the estimate of `Q` - which is `Q*`. 
+2) `Q` is the return of an action in a particular state. 
+3) Return is the sum of max future rewards possible, while you are in a state
+4) You estimate `Q` by taking the current reward `r` of taking an action `a` in state `s`, and adding a discounted (discounted because applying `lambda`) max reward of the new state `s'`, represented by `max Q*(s', a')`. In all, `Q*(s,a) = r + lambda * max Q*(s', .)`.
+5) `max Q*(s', .)` approximates `V*(s)` 
+6) `V*(s)` is the estimate of `V(s)`
+7) `V(s)` is the maximum return of being in s. 
+
+When you say Bellman's equation is a consistency check, the LHS of the equation is what the model currently thinks Q is, but when it takes that action in s, it calculates the RHS and updates its knowledge accordingly. The RHS may not always be accurate (particularly when it isn't familiar with the new state s'), but it will eventually approach the truth over (potentially) many episodes. This is also why it's a recipe for learning. I can see why this is a foundational equation for DRL. 
+
+For DQN:
+1) The previous process involves storing `Q(s,a)` (or what the model thinks `Q(s,a)` is) for every possible action in every possible state, which is a significant memory overhead, and unfeasble for situations such as automated driving (with many states that have each have many actions).
+2) DQN improves on that process, by replacing that table with a deep neural network that learns `Q(s,a)` from `s`, with a predefined set of actions `a` in each state. The input is a state, the output is the Q of each action in that state. 
+3) Thus, if `a` is continuous or varies between states (such that two states may have different sets of actions), DQN may not be the appropriate model
+4) DQN uses the two sides of Bellman's equation, LHS: `Q(s,a)` and RHS: `r + lambda * max Q(s', .)` to compute the loss. The LHS is the current prediction (`y-hat`), the RHS is the target or label or ground truth (`y`).
+5) The most naive way to apply neural network + Q learning is to train on every new subsequent state. The main problems with this are 1) a skewed distribution in the variance of states (consecutive states tend to be similar), and 2) that the agent doesn't actually *know* the target, and the target changes with learning. 
+6) The first point 1) is addressed in DQN with a replay buffer, where the agent accumulates every transition into a memory (replay buffer), and trains on mini-batches from its remembered tranistions instead of consecutive states.
+7) Transitions consist of (s, a, r, s', done), which are the prior state, the current action, the reward of that action, the new state, and whether the agent accomplished the goal, which is defined by the environment (e.g. in the corridor example, making it to the last room). These are all the variables that the neural network needs to predict Q. 
+8) The second point 2) is addressed by creating a duplicate network that computes the target, and gets updated significantly less frequently. This allows the target to be static enough for loss to be calculated without the DQN chasing its own tail. Thus, the first network computes `Q(s,a)` when making a prediction (`y-hat`), and the second frozen networks computes `max Q(s, .)` when computing the target `y` when computing the loss. 
+
+Follow-up questions for DQN:
+1) When every transition is stored in the replay buffer, isn't there still a higher proportion of very similar states (e.g. the car is driving and isn't near anyone), which adds bias to training? Or is the original problem not the proporition of similar states but their consecutive nature?
+2) Isn't the storage of transitions in the replay buffer a significant memory overhead? Or is there a limit to the amount of transitions that it stores, where it only keeps the X most recent (or highest value?) transitions?
+3) What activation functions does the network in DQN typically use? ReLU? And I assume it uses softmax to compute the output?
+
+## Response 7 Clarify DQN and Bellman
+
+Your understanding is mostly solid, and the consistency-check paragraph is exactly right. A few of the numbered points need fixing, though.
+
+### Corrections to your summary
+
+1. **Q\* is the true answer, not an estimate.** Q\* is the real optimal Q-value, which the Bellman equation describes. What the agent learns is **Q**, an estimate that gets closer to Q\* over time. "Bellman's equation is the condition Q\* satisfies" is the clean way to say it.
+2. **Return is the sum of *discounted* future rewards.** The "max" comes from behaving optimally, not from the definition of return. Q(s, a) is the *expected* return if you take a in s and then act well afterward.
+3. **The discount is γ (gamma), not λ.** This matters because λ is a different parameter used in methods like TD(λ), including the "Distributional Q(λ)" paper I mentioned earlier.
+4. **max Q\*(s′, ·) equals V\*(s′), not V\*(s).** It's the value of the *next* state. V\*(s) = max over a of Q\*(s, a), and V\* is also the true value, not an estimate of V. In general, V(s) is the expected return from s under some policy, and V\* is that value under the best policy.
+5. **A transition is not "all the variables the network needs to predict Q."** The network's input is only the state s, and its outputs are the Q-values. The action a picks which output to train. The reward r, next state s′ and done flag are used to build the *target*. Also, `done` means the episode ended, whether by reaching the goal or by crashing. When it's true, the future term is dropped: target = r.
+6. **On the target network:** it computes max Q(s′, ·), the *next* state, rather than s.
+
+Two refinements to your other points. For DQN point 3, the set of actions can vary by state if you use *action masking* (illegal actions are excluded from the max), as in Maskable PPO from your list. And in the consistency-check paragraph, using your own estimates of s′ to update s is called **bootstrapping**. It's why early targets can be wrong, and why convergence takes many episodes.
+
+### Your follow-up questions
+
+**1) Similar states and bias.** Both concerns are real, but the replay buffer only fixes one of them.
+
+- Replay fixes the *consecutive* problem. Neural networks assume training examples are roughly independent. A stream of near-identical consecutive frames violates that, and shuffling restores it.
+- It does **not** fix *imbalance*. If 95% of the buffer is "driving alone on an empty road," the rare, critical situations (near-collisions, merge gaps) are underrepresented, and the network may learn them poorly. This is a real issue for your project.
+- Why the skewed data doesn't invalidate Q-learning: the Bellman equation holds for any transition, regardless of which policy generated it. That's why Q-learning is **off-policy** and can learn from old or random data.
+
+Common remedies for imbalance are **prioritized experience replay** (sample transitions with a large Bellman error more often), designing your custom environment so episodes start in dense, difficult traffic, and rewarding the right behaviors.
+
+**2) Memory.** Yes, the buffer has a fixed capacity (typically 10⁵ to 10⁶ transitions). It works as a first-in-first-out queue: when full, the oldest transitions are overwritten. For your project, memory is small. A highway-env state might be about 25 numbers, so a million transitions is a few hundred MB at most. My template uses a 15,000-transition buffer. Memory becomes a concern for image inputs like Atari, which need tricks like storing 8-bit pixels.
+
+**3) Activations and output.** Hidden layers typically use **ReLU** (the original DQN did, and I believe SB3's DQN does by default). The output layer has **no softmax** and no activation at all. It's a plain linear layer that outputs raw Q-values. Q-values aren't probabilities. They can be 9, -10 or 0.37 and don't need to sum to 1. The agent just takes the argmax.
+
+You're right that softmax appears in the other family. A policy-gradient network like PPO's with discrete actions outputs probabilities over actions, so it uses softmax at the end. That's a good setup for the next topic.
+
+I'd suggest policy gradients and PPO next, since it's likely one of your benchmark models and the 2026 candidates PPO+ and ExO-PPO build on it. Or I can write the tabular corridor code first. Which would you prefer?
+
+## Summary 7 Clarify DQN and Bellman
+
+refined: 
+
+In other words:
+1) Bellman's equation is how to find the estimate of `Q*` - which is `Q`. 
+2) `Q` is the expected return of an action in a particular state, and do well afterwards. 
+3) Return is the sum of discounted future rewards, represented by `max Q(s',a')`
+4) You estimate `Q` by taking the current reward `r` of taking an action `a` in state `s`, and adding a discounted (discounted because applying `gamma`) max expected return of the new state `s'`, represented by `max Q*(s', a')`. In all, `Q*(s,a) = r + gamma * max Q*(s', .)`.
+5) `max Q*(s', .)` approximates `V*(s')` 
+6) `V*(s)` is the truth, and is estimated by `V(s)`
+7) `V(s)` is the expected return of being in s, under some policy. 
+
+When you say Bellman's equation is a consistency check, the LHS of the equation is what the model currently thinks Q is, but when it takes that action in s, it calculates the RHS and updates its knowledge accordingly. The RHS may not always be accurate (particularly when it isn't familiar with the new state s') (bootstrapping = using own estimate of s'), but it will eventually approach the truth over (potentially) many episodes. This is also why it's a recipe for learning. I can see why this is a foundational equation for DRL. 
+
+For DQN:
+1) The previous process involves storing `Q(s,a)` (or what the model thinks `Q(s,a)` is) for every possible action in every possible state, which is a significant memory overhead, and unfeasble for situations such as automated driving (with many states that have each have many actions).
+2) DQN improves on that process, by replacing that table with a deep neural network that learns `Q(s,a)` from `s`, with a predefined set of actions `a` in each state. The input is a state, the output is the Q of each action in that state. 
+3) Thus, if `a` is continuous or varies between states (such that two states may have different sets of actions), DQN may not be the appropriate model. (The inconsistency between states can be fixed with action masking)
+4) DQN uses the two sides of Bellman's equation, LHS: `Q(s,a)` and RHS: `r + lambda * max Q(s', .)` to compute the loss. The LHS is the current prediction (`y-hat`), the RHS is the target or label or ground truth (`y`).
+5) The most naive way to apply neural network + Q learning is to train on every new subsequent state. The main problems with this are 1) a skewed distribution in the variance of states (consecutive states tend to be similar), and 2) that the agent doesn't actually *know* the target, and the target changes with learning. 
+6) The first point 1) is addressed in DQN with a replay buffer, where the agent accumulates every transition into a memory (replay buffer), and trains on mini-batches from its remembered tranistions instead of consecutive states.
+7) Transitions consist of (s, a, r, s', done), which are the prior state, the current action, the reward of that action, the new state, and whether the agent accomplished the goal, which is defined by the environment (e.g. in the corridor example, making it to the last room), or if the agent crashed. These are all the variables that the agent needs to predict Q, and compute the loss. 
+8) The second point 2) is addressed by creating a duplicate network that computes the target, and gets updated significantly less frequently. This allows the target to be static enough for loss to be calculated without the DQN chasing its own tail. Thus, the first network computes `Q(s,a)` when making a prediction (`y-hat`), and the second frozen networks computes `max Q(s', .)` when computing the target `y` when computing the loss. 
+
+Follow-up questions for DQN:
+1) When every transition is stored in the replay buffer, isn't there still a higher proportion of very similar states (e.g. the car is driving and isn't near anyone), which adds bias to training? Or is the original problem not the proporition of similar states but their consecutive nature?
+ - Response: Yes that is a problem, replay buffer fixes the consecutive problem. 
+2) Isn't the storage of transitions in the replay buffer a significant memory overhead? Or is there a limit to the amount of transitions that it stores, where it only keeps the X most recent (or highest value?) transitions?
+ - yes, typically 10^5 or 10^6 transitions
+3) What activation functions does the network in DQN typically use? ReLU? And I assume it uses softmax to compute the output?
+ - ReLU yes, not softmax just does raw linear
+
+
+## Prompt 8 Metrics
+
+Before discussing PPO, I first want to ask what metrics are common to evaluate DRL models on? categorical-based DL models utilize accuracy, recall, f1, etc., while regression-based models are compared on MSE, R2, etc. What about DRL?
+
+## Response 8 Metrics
+
+The main difference from supervised learning is that there's no fixed dataset or ground-truth label, so you evaluate **behavior** by running the trained agent in the environment. Loss isn't a performance metric either. A DQN's TD loss can go up while the policy improves, because the targets are moving.
+
+### 1) Return-based metrics (the standard core)
+
+- **Episodic return:** the total (usually undiscounted) reward per episode. You report the mean over many evaluation episodes, with the standard deviation or a confidence interval. This is the RL counterpart of accuracy.
+- **Learning curve:** return plotted against training steps. It is the most common figure in RL papers.
+- **Final performance:** the mean return at the end of training, or averaged over the last N evaluations.
+- **Normalized score:** return scaled between a random policy and a reference (human-normalized on Atari). It lets you aggregate across environments with different reward scales.
+
+### 2) Efficiency and stability
+
+- **Sample efficiency:** how many environment steps are needed to reach a given performance, or the area under the learning curve. This is the main selling point of most recent methods (CrossQ, SimBa, BRO).
+- **Wall-clock time and compute:** training time and hardware. This matters for fair comparison, since a method that is 3x more sample-efficient but 10x slower per step is not obviously better.
+- **Variance across seeds:** RL results are notoriously variable. Two runs of the same algorithm with different random seeds can differ a lot. Henderson et al.'s *Deep Reinforcement Learning That Matters* (2018) is the classic paper on this.
+- **Stability:** whether performance collapses or oscillates during training.
+
+### 3) Robustness and generalization
+
+- **Evaluation on unseen conditions:** different traffic densities, speeds or random seeds not used in training. A policy can overfit to its training scenarios.
+- **Sensitivity to hyperparameters:** how much performance depends on careful tuning.
+
+### 4) Task-specific metrics (most relevant to your project)
+
+Return alone can hide what you care about, since a reward function trades off competing goals. For highway merging you'd also report:
+
+- **Collision rate** (fraction of episodes ending in a crash). This is your safety metric.
+- **Success rate** (merged and took the exit).
+- **Time-to-exit** or episode length for successful runs, which is your "fastest time."
+- **Average speed**, and possibly comfort measures like jerk or the number of lane changes.
+- **Constraint cost:** in safe RL, the cumulative safety violations, reported separately from reward.
+
+Because your original question was "fastest without accidents," I'd make collision rate and time-to-exit your headline metrics, with return as supporting evidence. Otherwise a result can look good simply because your reward weights favored one model.
+
+### 5) Statistical rigor
+
+Recent practice is to avoid reporting only a mean over 3 seeds. The influential paper here is *Deep Reinforcement Learning at the Edge of the Statistical Precipice* (Agarwal et al., NeurIPS 2021), which recommends:
+
+- Many seeds, at least 5 and ideally 10 or more.
+- The **interquartile mean (IQM)** instead of the plain mean, since it's less sensitive to outlier runs.
+- **Bootstrapped confidence intervals** and **performance profiles** instead of single numbers.
+- The **`rliable`** Python library, which computes these.
+
+For a class project, a realistic target is 5 seeds per model, 50 or more evaluation episodes per seed, and means with confidence intervals. That would be more rigorous than most student projects.
+
+### 6) Evaluation protocol details
+
+- Evaluate with the policy **deterministic** (no exploration noise) on separate evaluation episodes, not the training episodes.
+- Use the **same environment, reward and episode seeds** for every model.
+- Report the training budget (total steps), so the comparison is fair.
+
+`highway_sb3_benchmark.py` from earlier already does a basic version: several seeds, deterministic evaluation, and collision rate, speed, return and episode length.
+
+Do you want to move on to policy gradients and PPO now, or first sketch which metrics and statistical tools you'd put in your midterm report?
+
+## Summary 8 Metrics
+
+In general:
+ - Episodic return
+ - learning curve
+ - final performance
+ - normalized score
+ - sample efficiency
+ - compute time
+ - variance across seeds
+ - stability
+ - evaluation on unseen conditions
+ - sensitivty to hyperparemetrs
+for our situation
+ - collision rate
+ - success rate
+ - time-to-exit
+ - average speed
+ - constraint cost - cumulative safety violations
+ - maybe return (episodic return?)
+ - apply statistcal rigor - 5-10+ seeds, IQM, bootstrapped confidence intervals and performance profiles, and use rliable
+
+ I'll return to what each of these mean exactly later. 
+
+
+## Prompt 9 PPO
+
+Yes, can you explain what PPO is?
+
+## Response 9 PPO
+
+### The core difference from DQN
+
+DQN learns Q-values and derives a policy from them ("pick the highest Q"). PPO skips that step and **learns the policy directly**. A network takes a state and outputs the probability of each action. For discrete actions this is the softmax output I mentioned earlier, e.g. [speed up 0.05, slow down 0.10, left 0.60, right 0.05, keep 0.20]. For continuous actions it outputs the mean and spread of a Gaussian over, say, steering and throttle. The agent *samples* from this distribution, which gives it built-in exploration.
+
+PPO builds on two earlier ideas, so I'll go through those first.
+
+### Step 1: The basic policy gradient (REINFORCE)
+
+The idea is trial and error:
+
+1. Play an episode using the current policy.
+2. If the episode went well, make every action taken in it **more likely**.
+3. If it went badly, make those actions **less likely**.
+
+The loss is roughly `-log π(a|s) × G`, where G is the return. Minimizing it increases the probability of actions that were followed by high returns.
+
+This works but is very noisy. If one merge succeeds, every action in that episode gets rewarded, including a pointless lane change at the start. It takes many episodes to average out which actions actually mattered.
+
+### Step 2: Advantages and the critic (actor-critic)
+
+Instead of asking "was the return high?", ask "was the return higher than *expected* from this state?" That quantity is the **advantage**:
+
+> A(s, a) ≈ Q(s, a) − V(s)
+
+Suppose the state's value is V(s) = 5, meaning you typically get about 5 from here:
+
+- You take an action and the outcome is worth 8, so A = +3 and that action becomes more likely.
+- You take another action and the outcome is worth 2, so A = −3 and it becomes less likely.
+
+If everything in this state scores around 5, the advantages are near zero and the policy barely changes. This removes much of the noise.
+
+To estimate V(s) you need a second network, called the **critic**, which learns values the way DQN learns Q. The policy network is the **actor**. PPO is therefore an **actor-critic** method, and it uses both ideas from earlier: values from the Bellman equation, and a directly learned policy. In practice the advantage is computed with **GAE** (Generalized Advantage Estimation), which uses a parameter λ to balance noisy-but-unbiased estimates against smooth-but-biased ones. That's the other place λ shows up in RL.
+
+### Step 3: The step-size problem, and PPO's fix
+
+Updating a policy is delicate. The data you train on was generated by the *current* policy, so if one update makes the policy much worse, the next batch of data is also bad and it can spiral. Training collapses and may not recover. DQN doesn't have this problem as acutely, because its replay buffer holds old data from many policies.
+
+PPO's solution is to keep each update small. For each action in the batch, it computes a **ratio**:
+
+> ratio = π_new(a|s) / π_old(a|s)
+
+A ratio of 1 means no change, 1.5 means the action is now 50% more likely, and 0.5 means half as likely. PPO then **clips** how much credit the update can get from a change:
+
+> loss = −min( ratio × A, clip(ratio, 1−ε, 1+ε) × A )   with ε typically 0.2
+
+The intuition, for a good action (A > 0): the update raises its probability, but once the ratio passes 1.2, the objective stops rewarding further increases, so the gradient there goes to zero. For a bad action (A < 0), the same happens when the ratio falls below 0.8. Policy changes are therefore capped at roughly ±20% per update round. This clipping, which is the "proximal" in the name, is what makes PPO stable and simple.
+
+It also lets PPO reuse each batch for several passes. A naive policy gradient can use a batch once, but with the clip you can safely do several epochs on the same data.
+
+### The full loop
+
+```
+repeat:
+    1. collect e.g. 2048 steps using the current policy
+    2. compute advantages (with the critic and GAE)
+    3. for several epochs: update on mini-batches using
+         clipped policy loss + value loss + small entropy bonus
+    4. throw the batch away
+```
+
+The **entropy bonus** rewards the policy for staying a bit random, which preserves exploration. The data is discarded at step 4 because it came from the old policy. This makes PPO **on-policy**.
+
+### PPO versus DQN
+
+| | DQN | PPO |
+|---|---|---|
+| Learns | Q-values; policy is "argmax Q" | The policy directly (plus a value critic) |
+| Actions | Discrete only | Discrete and continuous |
+| Data | Off-policy: replay buffer reuses old data | On-policy: data used briefly, then discarded |
+| Sample efficiency | Higher | Lower |
+| Stability and tuning | Can be finicky | Robust, and a common default |
+| Parallelism | Harder | Easy: run many environments at once |
+
+PPO's weakness is sample efficiency, since it throws data away. Its strengths are stability and generality, which is why it became the default (Schulman et al., 2017, *Proximal Policy Optimization Algorithms*). For your project it handles both discrete and continuous highway-env action spaces, so it's a good baseline.
+
+The 2026 PPO variants I mentioned earlier (PPO+ and ExO-PPO) target exactly these weaknesses: wasted data and a gap to off-policy methods in final performance. That makes them a natural fit for a "classic vs. new" comparison. I'd still check each paper's details and code availability before committing.
+
+From here I can walk through how SAC works, since it's the off-policy actor-critic and the other major family, or write the tabular corridor code. Which would you prefer?
+
+## Summary 9 PPO 
+
+
+PPO:
+ 1) There are four general steps
+ 2) The first step, collect a batch e.g. 2048 steps with the current policy
+ 3) The current current policy initializes the likelihood of all actions to 0 or the same probability
+ 4) The second step, compute the advantage A
+ 5) To compute A, you need a critic and GAE
+ 6) The critic is a neural network that outputs the expected return of being in state s, V(s)
+ 7) The third step, divide the results of step 1) into mini batches and loop on each mini batch:
+ 8) For some predefined set of epochs, update the model on the current mini batch with clipped policy loss, value loss, and a small entropy bonus
+ 9) To compute the clipped policy loss, first compute the ratio = new pi(a|s) / old pi(a|s)
+ 10) Next, compute clipped policy loss = -min(ratio x A, clip(ratio, 1-epsilon, 1+epsilon) x A)
+ 11) epsilon is typically set to 0.2
+ 12) The clipping is to keep the updated small, which prevents spiraling and training collapse, leading to model instability
+ 13) For example, the ratio does not provide any more update if it is above 1.2, and any less update if it is below 0.8.  
+ 14) The entropy bonus rewards the policy for staying random, which promotes exploration
+ 14) The fourth step, through the batch away, and repeat at step 1
+
+
+
+Follow up for previous ideas: 
+ - In the first step, when you say collect a batch of steps, what are you collecting? A sequence of states, actions, and rewards?
+ - what is the pi()?
+ - what is the input for the critic network in PPO? s?
+ - What is the equation for GAE?
+ - how many epochs is PPO typically run on each mini batch?
+ - how long do you repeat the loop in PPO? when does training stop?
+ - How do you compute value loss?
+ - what is the entropy bonus? how is it computed?
+
+
+## Prompt 10 PPO 2
+
+PPO:
+ 1) There are four general steps
+ 2) The first step, collect a batch e.g. 2048 steps with the current policy
+ 3) The current current policy initializes the likelihood of all actions to 0 or the same probability
+ 4) The second step, compute the advantage A
+ 5) To compute A, you need a critic and GAE
+ 6) The critic is a neural network that outputs the expected return of being in state s, V(s)
+ 7) The third step, divide the results of step 1) into mini batches and loop on each mini batch:
+ 8) For some predefined set of epochs, update the model on the current mini batch with clipped policy loss, value loss, and a small entropy bonus
+ 9) To compute the clipped policy loss, first compute the ratio = new pi(a|s) / old pi(a|s)
+ 10) Next, compute clipped policy loss = -min(ratio x A, clip(ratio, 1-epsilon, 1+epsilon) x A)
+ 11) epsilon is typically set to 0.2
+ 12) The clipping is to keep the updated small, which prevents spiraling and training collapse, leading to model instability
+ 13) For example, the ratio does not provide any more update if it is above 1.2, and any less update if it is below 0.8.  
+ 14) The entropy bonus rewards the policy for staying random, which promotes exploration
+ 14) The fourth step, through the batch away, and repeat at step 1
+
+
+
+Follow up: 
+ - In the first step, when you say collect a batch of steps, what are you collecting? A sequence of states, actions, and rewards?
+ - what is the pi()?
+ - what is the input for the critic network in PPO? s?
+ - What is the equation for GAE?
+ - how many epochs is PPO typically run on each mini batch?
+ - how long do you repeat the loop in PPO? when does training stop?
+ - How do you compute value loss?
+ - what is the entropy bonus? how is it computed?
+
+
+## Response 10 PPO 2
+
+Your summary matches the overall structure. A few points need fixing first, then your follow-up questions.
+
+### Corrections
+
+- **Point 3:** The policy network starts with random weights, so its outputs are *roughly* uniform, e.g. [0.2, 0.2, 0.2, 0.2, 0.2] for five actions. Probabilities are never "0," since an action at 0 could never be sampled. Training then shifts these probabilities.
+- **Points 7-8:** The epoch loop wraps the mini-batch loop, not the other way around. For each epoch you shuffle the whole 2048-step batch, split it into mini-batches (say 32 of size 64), and update on each. Repeat for all epochs. Each sample is therefore used once per epoch, about 10 times in total.
+- **Point 13:** Clipping depends on the sign of A. For a **good** action (A > 0), the update stops rewarding once the ratio exceeds 1.2. For a **bad** action (A < 0), it stops once the ratio falls below 0.8. In the other direction, the objective doesn't clip, so mistakes get corrected. Clipping also isn't a hard limit. It removes the incentive to go further, but the ratio can still drift past the bounds.
+- **Point 14:** Yes, but "random" means *high entropy*, not uniformly random behavior. The bonus is only a gentle push.
+
+### Follow-up questions
+
+**What is collected in step 1?**
+For each step: the state s, action a, reward r and done flag. You also store two things computed at collection time: **log π_old(a|s)**, the log-probability the policy assigned to the chosen action, and **V(s)**, the critic's estimate. You need the first to compute the ratio later and the second for advantages. Often this is gathered from several environments in parallel, e.g. 8 environments × 256 steps = 2048.
+
+**What is π()?**
+It's the policy: π(a|s) is the probability of taking action a in state s. π_θ means the policy network with weights θ.
+
+- Discrete actions: the softmax output at the index of a.
+- Continuous actions: the Gaussian probability density at a.
+
+π_old is the policy that collected the batch (frozen), and π_new is the network as it's being updated. In code the ratio is computed from log-probabilities: `ratio = exp(logp_new − logp_old)`. At the very first update of a batch, π_new = π_old, so the ratio is exactly 1.
+
+**What's the critic's input?**
+Yes, just the state s. It outputs a single number V(s). Implementations differ on whether the actor and critic are separate networks or share early layers. SB3 uses separate networks by default.
+
+**GAE equation**
+First, the one-step "surprise":
+
+> δ_t = r_t + γ · V(s_{t+1}) − V(s_t)
+
+This is the Bellman error from earlier: the gap between what the critic predicted for s_t and the one-step Bellman target. Then GAE sums these surprises with decaying weights:
+
+> A_t = δ_t + (γλ) δ_{t+1} + (γλ)² δ_{t+2} + …
+
+It's computed backward through the batch: `A_t = δ_t + γλ · (1 − done_t) · A_{t+1}`. The `done` flag stops advantages leaking across episode boundaries, and V(s_{t+1}) is treated as 0 if the episode ended.
+
+The parameter λ sets the trade-off between bias and variance:
+
+- **λ = 0:** A_t = δ_t. It uses one step and the critic's guess, so low variance but biased when the critic is wrong.
+- **λ = 1:** the full discounted return minus V(s_t). It's unbiased but noisy.
+- **Typical:** γ = 0.99, λ = 0.95. Advantages are usually normalized (mean 0, std 1) per batch.
+
+**How many epochs?**
+Typically 3 to 10. The PPO paper used 10 for the continuous-control experiments and 3 for Atari, and SB3's default is 10. More epochs squeeze more out of each batch, but the policy drifts further from π_old, and the clipping only partly guards against that.
+
+**How long does the loop repeat?**
+You choose a total training budget in environment steps, and it runs until then. With 2048 steps per iteration and 1 million total steps, that's about 488 iterations. There's no automatic convergence stop in the basic algorithm. People watch the evaluation curve and pick a budget where it plateaus. Highway-env tasks usually use 10⁵ to 10⁶ steps, though this depends on your environment. Some implementations add an early-stop rule: end the epochs for a batch if the policy's KL divergence from π_old gets too large.
+
+**Value loss**
+It's a regression. First compute a target return for each step: `R_t = A_t + V_old(s_t)`, using the advantages and the values stored at collection time. Then:
+
+> L_V = mean( (V_θ(s_t) − R_t)² )
+
+This is the same pattern as DQN: the critic is trained toward a Bellman-style target that is held fixed during the update. Some implementations also clip the value update.
+
+**Entropy bonus**
+Entropy measures how spread out the policy is:
+
+> H(π(·|s)) = − Σ_a π(a|s) · log π(a|s)
+
+For five actions:
+
+- Uniform [0.2 ×5]: H = ln 5 ≈ 1.61, the maximum.
+- [0.6, 0.2, 0.1, 0.05, 0.05]: H ≈ 1.16.
+- A fully deterministic policy [1, 0, 0, 0, 0]: H = 0.
+
+For continuous Gaussian policies, H = ½ ln(2πe σ²) per action dimension, so a larger standard deviation means higher entropy. It's averaged over the batch and *subtracted* from the loss, so the optimizer is rewarded for staying spread out.
+
+### Putting the loss together
+
+PPO combines the three terms into one loss:
+
+```python
+ratio = torch.exp(logp_new - logp_old)
+policy_loss = -torch.min(ratio * adv, torch.clamp(ratio, 1 - eps, 1 + eps) * adv).mean()
+value_loss = ((values - returns) ** 2).mean()
+entropy = new_dist.entropy().mean()
+
+loss = policy_loss + 0.5 * value_loss - 0.01 * entropy   # coefficients vary
+```
+
+The coefficients are hyperparameters. 0.5 is a common weight for the value loss, and the entropy coefficient is usually between 0 and 0.01. SB3 defaults to 0.
+
+Your summary now covers the full algorithm. If you want to test your understanding, try computing δ and A for a short three-step corridor episode by hand.
+
+For the next step, I can explain SAC, the off-policy actor-critic and the other major family you'll encounter. Or we could return to your project and map PPO, DQN and SAC onto your 5-model choice and the metrics you'll report.
+
+## Summary 10 PPO 2
+
+
+PPO:
+ 1) There are four general steps
+ 2) The first step, collect a batch e.g. 2048 steps with the current policy
+ 3) The current current policy initializes the likelihood of all actions to the same probability
+ 4) The second step, compute the advantage A, which is how good the action was compared to what was expected. 
+ 5) To compute A, you need a critic and GAE
+ 6) The critic is a neural network that outputs the expected return of being in state s, V(s)
+ 7) The third step, repeat for some predefined set of epochs:
+ 8) Divide the results of step 1) into mini batches and on each mini batch update the model on the with clipped policy loss, value loss, and a small entropy bonus
+ 9) To compute the clipped policy loss, first compute the ratio = new pi(a|s) / old pi(a|s)
+ 10) Next, compute clipped policy loss = -min(ratio x A, clip(ratio, 1-epsilon, 1+epsilon) x A)
+ 11) epsilon is typically set to 0.2
+ 12) The clipping is to keep the updated small, which prevents spiraling and training collapse, leading to model instability
+ 13) For example, the ratio stops updating a good action (A > 0) once the ratio is above 1.2, and stops updating a bad action (A < 0), when the update is below 0.8.  
+ 14) The entropy bonus gently rewards the policy for high entropy, which promotes exploration
+ 15) The fourth step, throw the batch away, and repeat at step 1
+
+
+
+Follow up for previous ideas: 
+ - In the first step, when you say collect a batch of steps, what are you collecting? A sequence of states, actions, and rewards?
+ - what is the pi()?
+ - what is the input for the critic network in PPO? s?
+ - What is the equation for GAE?
+ - how many epochs is PPO typically run on each mini batch?
+ - how long do you repeat the loop in PPO? when does training stop?
+ - How do you compute value loss?
+ - what is the entropy bonus? how is it computed?
