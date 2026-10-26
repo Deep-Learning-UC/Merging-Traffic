@@ -13,6 +13,27 @@ on 10/20/22 after the meeting, she popped the midterm report that introduced req
 
 
 
+new TDL 
+- [ ] acquire baseline understand of DRL
+  - [x] what are the metrics - Prompt 8
+  - [ ] understand the core models in the various family of functions
+    - [x] DQN - Q learning - Prompt 7
+    - [x] PPO - policy gradient - Prompt 12
+    - [ ] SAC - off-policy actor-critic
+- [ ] research
+  - [ ] Starting points: 
+    - [ ] PPO+, 
+    - [ ] ExO-PPO, 
+    - [ ] Off-policy Distributional Q(lambda), 
+    - [ ] Reversal Q-learning, and 
+    - [ ] SimBa.
+    - [ ] Do I need more? 
+    - NOTE: But first check if they do not contain public repos or have an implementation somewhere. We cannot implement them if they do not contain public repos. The five models we need to consider should have implementations somewhere.
+      - NOTE: possible implementations include: Stable-Baselines3, SB3-Contrib, and SBX. But recent models are likely not be included in libraries.
+- [ ] finish assignment
+
+
+
 # midterm report
   - one submission per group
   - due 11/3/26
@@ -587,7 +608,7 @@ TDL
   - what are the metrics
   - understand the core models in the various family of functions
     - *DQN - Q learning
-    - PPO - policy gradient 
+    - *PPO - policy gradient 
     - SAC - off-policy actor-critic
 - research
   - Starting points: 
@@ -1050,30 +1071,451 @@ For the next step, I can explain SAC, the off-policy actor-critic and the other 
 
 
 PPO:
- 1) There are four general steps
- 2) The first step, collect a batch e.g. 2048 steps with the current policy
- 3) The current current policy initializes the likelihood of all actions to the same probability
- 4) The second step, compute the advantage A, which is how good the action was compared to what was expected. 
- 5) To compute A, you need a critic and GAE
- 6) The critic is a neural network that outputs the expected return of being in state s, V(s)
- 7) The third step, repeat for some predefined set of epochs:
- 8) Divide the results of step 1) into mini batches and on each mini batch update the model on the with clipped policy loss, value loss, and a small entropy bonus
- 9) To compute the clipped policy loss, first compute the ratio = new pi(a|s) / old pi(a|s)
- 10) Next, compute clipped policy loss = -min(ratio x A, clip(ratio, 1-epsilon, 1+epsilon) x A)
- 11) epsilon is typically set to 0.2
- 12) The clipping is to keep the updated small, which prevents spiraling and training collapse, leading to model instability
- 13) For example, the ratio stops updating a good action (A > 0) once the ratio is above 1.2, and stops updating a bad action (A < 0), when the update is below 0.8.  
- 14) The entropy bonus gently rewards the policy for high entropy, which promotes exploration
- 15) The fourth step, throw the batch away, and repeat at step 1
+ 1) There are two phases:
+    1) The first phase consits of two steps: step 1 collect a batch e.g. 2048 steps with the current policy  
+       1) The first policy initializes the likelihood of all actions to the same probability
+       2) Collect state s, action a, reward r, the done flag, log(pi_old(a|s)) for the ratio, and the critics estimate for that sample V(s) for advantages
+       3) This collection is often over many environments, e.g. 8 environmnts * 256 steps = 20458
+    2) The second step, compute the advantage A, which is how good the action was compared to what was expected, across each step. 
+       1) To compute A, you need a critic and GAE
+       2) The critic is a neural network that inputs the state s outputs the expected return of being in state s, V(s). 
+          1) Sometimes the critic shares the same early layers as the actor network, but many times the actor and critic are completely separate networks
+       3) For GAE, first compute delta_t = r_t + gamma * V(s_{t+1}) - V(s_t). This is the Bellman error
+          1) Next GAE computes the the advantage A_t = delta_t + (gamma*lambda)\*delta_{t+1} + (gamma\*delta)^2\*delta_{t+2}...
+          2) This previous equation is computed backward through the batch as A_t = delta_t + gamma*lambda * (1-done_t) + A_{t+1}
+          3) The done_t flag stops advantages from leaking across episodic boundaries
+          4) lambda sets the trade-off between bias and variance. 
+             1) lambda = 0, A_t = delta_t, low variance but biased if critic is wrong
+             2) lambda = 1, is full discounted return, which is unbiased but noisy
+          5) Typically gamma=0.99, lambda=0.95, and advantages are normalized (mean 0, std 1) per batch
+    3) The second phase consists of two steps: the first step: repeat for some predefined set of epochs (usually 3-10):
+       1) Divide the results of phase 1 into mini batches and on each mini batch update the model on the with clipped policy loss, value loss, and a small entropy bonus
+          1) To compute the clipped policy loss 
+             1) first compute the ratio = pi_new(a|s) / pi_old(a|s)
+               1) pi(a|s) is the policy, the probability of taking action a in state s. the theta in pi_theta(a|s) (e.g. old or new) refers to the weights of the policy network. 
+               2) This is often done with log-probabilities, exp(logp_new - logp_old)
+             2) Next, compute clipped policy loss = -min(ratio x A, clip(ratio, 1-epsilon, 1+epsilon) x A)
+               1) epsilon is typically set to 0.2
+               2) The clipping is to keep the updated small, which prevents spiraling and training collapse, leading to model instability
+                  1) For example, the ratio stops updating a good action (A > 0) once the ratio is above 1.2, and stops updating a bad action (A < 0), when the update  is below 0.8.  
+          3) Calculate value loss with a regression
+             1) First calculate target return for a step, R_T = A_t + V_old(s_t) using advantages and V_old (which is stored at collection time)
+             2) Then calculate L_V = mean( (V_theta(s-t) - R_t)^2 ), where V_theta is the return value with the current weights of the critic network
+          4) The entropy bonus gently rewards the policy for high entropy, which promotes exploration
+             1) The entropy bonus is calculated with H(pi(.|s)) = -Sigma_a[ pi(a|s) * log(pi(a|s)) ]. 
+             2) Entropy bonus is max when the distribution of action probabilities is uniform, and decreases when it becomes more deterministic (e.g. chooses the same action every time)
+             3) For policies that are continues and Gaussian, entropy H is calculated as (1/2)ln(2(pi)(3)*sigma^2) per action dimension (more std = higher entropy). It is averaged over the batch and subtracted from the loss, the optimizer is rewarded for staying spread out. 
+          5) loss is calculated with something like policy_loss + 0.5*value_loss - 0.01\*entropy
+             1) Those coefficients are hyperparameters and flexible. The current values are common.  
+      4) The fourth step, throw the batch away, and repeat at step 1 until reached e.g. a max environment steps (e.g. 1 million/10^6 steps)
+        1) (Some algorithms implement an early stop where the loop ends for a batch when the policy's KL divergence from pi_old gets too large)
+
+
+## Prompt 11 PPO 3
+
+PPO:
+ 1) There are two phases:
+    1) The first phase consits of two steps: step 1 collect a batch e.g. 2048 steps with the current policy  
+       1) The first policy initializes the likelihood of all actions to the same probability
+       2) Collect state s, action a, reward r, the done flag, log(pi_old(a|s)) for the ratio, and the critics estimate for that sample V(s) for advantages
+       3) This collection is often over many environments, e.g. 8 environmnts * 256 steps = 20458
+    2) The second step, compute the advantage A, which is how good the action was compared to what was expected, across each step. 
+       1) To compute A, you need a critic and GAE
+       2) The critic is a neural network that inputs the state s outputs the expected return of being in state s, V(s). 
+          1) Sometimes the critic shares the same early layers as the actor network, but many times the actor and critic are completely separate networks
+       3) For GAE, first compute delta_t = r_t + gamma * V(s_{t+1}) - V(s_t). This is the Bellman error
+          1) Next GAE computes the the advantage A_t = delta_t + (gamma*lambda)\*delta_{t+1} + (gamma\*delta)^2\*delta_{t+2}...
+          2) This previous equation is computed backward through the batch as A_t = delta_t + gamma*lambda * (1-done_t) + A_{t+1}
+          3) The done_t flag stops advantages from leaking across episodic boundaries
+          4) lambda sets the trade-off between bias and variance. 
+             1) lambda = 0, A_t = delta_t, low variance but biased if critic is wrong
+             2) lambda = 1, is full discounted return, which is unbiased but noisy
+          5) Typically gamma=0.99, lambda=0.95, and advantages are normalized (mean 0, std 1) per batch
+    3) The second phase consists of two steps: the first step: repeat for some predefined set of epochs (usually 3-10):
+       1) Divide the results of phase 1 into mini batches and on each mini batch update the model on the with clipped policy loss, value loss, and a small entropy bonus
+          1) To compute the clipped policy loss 
+             1) first compute the ratio = pi_new(a|s) / pi_old(a|s)
+               1) pi(a|s) is the policy, the probability of taking action a in state s. the theta in pi_theta(a|s) (e.g. old or new) refers to the weights of the policy network. 
+               2) This is often done with log-probabilities, exp(logp_new - logp_old)
+             2) Next, compute clipped policy loss = -min(ratio x A, clip(ratio, 1-epsilon, 1+epsilon) x A)
+               1) epsilon is typically set to 0.2
+               2) The clipping is to keep the updated small, which prevents spiraling and training collapse, leading to model instability
+                  1) For example, the ratio stops updating a good action (A > 0) once the ratio is above 1.2, and stops updating a bad action (A < 0), when the update  is below 0.8.  
+          3) Calculate value loss with a regression
+             1) First calculate target return for a step, R_T = A_t + V_old(s_t) using advantages and V_old (which is stored at collection time)
+             2) Then calculate L_V = mean( (V_theta(s-t) - R_t)^2 ), where V_theta is the return value with the current weights of the critic network
+          4) The entropy bonus gently rewards the policy for high entropy, which promotes exploration
+             1) The entropy bonus is calculated with H(pi(.|s)) = -Sigma_a[ pi(a|s) * log(pi(a|s)) ]. 
+             2) Entropy bonus is max when the distribution of action probabilities is uniform, and decreases when it becomes more deterministic (e.g. chooses the same action every time)
+             3) For policies that are continues and Gaussian, entropy H is calculated as (1/2)ln(2(pi)(3)*sigma^2) per action dimension (more std = higher entropy). It is averaged over the batch and subtracted from the loss, the optimizer is rewarded for staying spread out. 
+          5) loss is calculated with something like policy_loss + 0.5*value_loss - 0.01\*entropy
+             1) Those coefficients are hyperparameters and flexible. The current values are common.  
+      4) The fourth step, throw the batch away, and repeat at step 1 until reached e.g. a max environment steps (e.g. 1 million/10^6 steps)
+        1) (Some algorithms implement an early stop where the loop ends for a batch when the policy's KL divergence from pi_old gets too large)
+
+Follow up: 
+ - For clarification, what is a step? A full episode? Just one action/transition? Or until the model stops?
+ - what is the exp() function?
+ - what are log probabilities? How do they relate to non-log probabilitiesS
+ - why are log probabilities used for calculating things like the ratio?
+ - What do you mean by one-step Bellman target?
+ - I feel like i'm missing another network in my explanation. Is there an actor network somewhere? where does it fit in? how/where is the loss applied?
+ - what is delta_t? Is that just the Bellman error? It matches the simpler equation of advantage computed earlier
+ - what is the _t? Does that refer to the value of something at each step?
+
+## Response 11 PPO 3
+
+
+Your notes are very close to complete. I'll go through the fixes first, then your questions.
+
+### Fixes to your notes
+
+1. **8 environments × 256 steps = 2048**, not 20458.
+2. **GAE expansion:** the third term should be (γ·**λ**)²·δ_{t+2}. You wrote (γ·δ)².
+3. **Backward recursion:** the pieces are multiplied, not added: `A_t = δ_t + γ·λ·(1 − done_t)·A_{t+1}`. You wrote `+` between the last two terms.
+4. **Gaussian entropy:** it's ½ ln(2π**e**σ²), where e ≈ 2.718 is Euler's number, not 3.
+5. **A detail about value targets:** compute R_t = A_t + V_old(s_t) from the *raw* advantages, before normalizing them. Normalization is only applied to the advantages used in the policy loss.
+6. **Minor:** reshuffle the batch into mini-batches at the start of each epoch.
+
+Everything else in your notes is correct.
+
+### 1) What is a "step"?
+
+A step is **one transition**: the agent sees state s_t, takes one action a_t, and the environment returns reward r_t and the next state. An episode is a sequence of many steps, from `reset()` until a crash, a success or a time limit.
+
+A batch of 2048 steps doesn't line up with episode boundaries. It may contain several complete episodes plus a partial one at the end. For the partial one, the `done` flag is 0 at the cut-off, and the critic's V(s_{t+1}) is used to bootstrap beyond it. That's why GAE uses the critic's estimate of the final state instead of treating it as the end.
+
+In highway-env, one step is one decision, and the default is one decision per second of simulated time. The built-in `merge-v0` runs about 40 steps per episode.
+
+### 2) What is exp()?
+
+`exp(x)` means eˣ, where e ≈ 2.718. Some values: exp(0) = 1, exp(0.18) ≈ 1.2, exp(−0.69) ≈ 0.5. It's the inverse of the natural logarithm.
+
+### 3) What are log probabilities?
+
+The natural log of the probability: **log p = ln(p)**. Since p is between 0 and 1, log p is always zero or negative.
+
+| p | log p |
+|---|---|
+| 1.0 | 0 |
+| 0.6 | −0.51 |
+| 0.5 | −0.69 |
+| 0.1 | −2.30 |
+| 0.01 | −4.61 |
+
+A higher probability gives a log closer to 0, and a tiny probability gives a very negative number. You can always recover p with `exp(log p)`.
+
+### 4) Why use logs for the ratio?
+
+1. **The ratio becomes a subtraction.** π_new/π_old = exp(log π_new − log π_old). Take π_old = 0.50 and π_new = 0.60: the logs are −0.693 and −0.511, the difference is 0.182, and exp(0.182) = 1.2. Same answer.
+2. **Numerical stability.** Probabilities can be extremely small. A continuous policy with several action dimensions, or a long sequence, multiplies many numbers below 1, which can underflow to 0 in floating point. Taking logs turns products into sums (log(a·b) = log a + log b), which stays well behaved.
+3. **It's what the network naturally produces.** Softmax outputs are computed stably as log-softmax, and the log-probability is what the gradient of the policy loss needs anyway.
+
+### 5) "One-step Bellman target"
+
+The target is r_t + γ·V(s_{t+1}). It's "one-step" because it uses only **one real reward**, then replaces everything after that with the critic's estimate of the next state. A two-step version would use r_t + γ·r_{t+1} + γ²·V(s_{t+2}), and an infinite-step one would use real rewards until the episode ends (the full return). GAE blends all of these.
+
+### 6) The missing network: the actor
+
+You're right, it's missing. PPO has **two networks**:
+
+| | Actor (policy) π_θ | Critic V_φ |
+|---|---|---|
+| Input | state s | state s |
+| Output | action probabilities (or Gaussian mean and std) | one number, V(s) |
+| Used for | choosing actions during collection; computing log π | computing advantages and the value loss |
+| Trained by | clipped policy loss + entropy bonus | value loss |
+
+The actor also determines the ratio, because π_new is the actor's current output, while π_old doesn't need a separate copy of the network. You saved log π_old(a|s) numbers at collection time, and that's all the ratio needs.
+
+Where the loss is applied depends on the architecture. With separate networks, the policy and entropy terms only touch the actor's weights, and the value term only touches the critic's. With shared early layers, both contribute gradients to the shared layers, which is why the coefficient (0.5) matters. Only the actor is needed after training, since the critic is a training tool.
+
+### 7) What is δ_t?
+
+Yes, δ_t = r_t + γV(s_{t+1}) − V(s_t) is the Bellman error. It also matches the earlier simple advantage, because A(s, a) ≈ Q(s, a) − V(s), and Q(s, a) ≈ r + γV(s′) gives exactly δ. So δ_t is a **one-step advantage estimate** (what GAE gives with λ = 0), and GAE sums the discounted δ's from the following steps to get a smoother estimate.
+
+### 8) What does _t mean?
+
+It's the **time-step index**. r_t is the reward at step t, s_t is the state at step t, V(s_t) is the critic's estimate there, and A_t is the advantage of the action taken at step t. t+1 is the next step. In a batch from multiple environments, t runs along each environment's own sequence.
+
+### A worked example (the corridor)
+
+Take one episode A → B → C → Goal, with γ = 0.9, λ = 0.95 (so γλ = 0.855). The critic is currently poor: V(A) = 2, V(B) = 3, V(C) = 4. The true values are 8.1, 9 and 10.
+
+**δ's:**
+- δ₂ (at C, reaching the goal, done): 10 + 0 − 4 = **6**
+- δ₁ (at B): 0 + 0.9 × 4 − 3 = **0.6**
+- δ₀ (at A): 0 + 0.9 × 3 − 2 = **0.7**
+
+**Advantages (backward):**
+- A₂ = 6
+- A₁ = 0.6 + 0.855 × 6 = **5.73**
+- A₀ = 0.7 + 0.855 × 5.73 ≈ **5.60**
+
+All are positive because the episode went much better than the critic expected, so the actor makes these actions more likely. The value targets R_t = A_t + V(s_t) are 7.6, 8.73 and 10, which are far closer to the true 8.1, 9 and 10 than the critic's guesses. The value loss pulls the critic toward them, so the next batch has smaller errors.
+
+Next I could explain SAC, the off-policy actor-critic that rounds out the three classics, or write a compact PPO implementation in the same style as `dqn_from_scratch.py`. Which do you prefer?
+
+
+## Summary 11 PPO 3
+
+log probabilities = log p = ln(p)
+used to turn division/multiplication into addition/subtraction and to make numbers better
+typically probabilities are really small, so this makes them slightly more sizeable which prevents roundoff error
+ln(p) is also always negative
+
+PPO:
+ 1) There are two phases:
+    1) The first phase consits of two steps: step 1 collect a batch e.g. 2048 steps with the current policy  
+       1) The first policy initializes the likelihood of all actions to the same probability
+       2) A step is one transition: you're in state s, you take action a, you get a reward r
+       3) Collect state s, action a, reward r, the done flag, log(pi_old(a|s)) for the ratio, and the critics estimate for that sample V(s) for advantages
+       4) This collection is often over many environments, e.g. 8 environmnts * 256 steps = 2048
+    2) The second step, compute the advantage A, which is how good the action was compared to what was expected, across each step. 
+       1) To compute A, you need a critic and GAE, it's used to compute the loss where really good improvements are rewarded and bad changes aren't
+       2) A < 0 is an action was worse than expected, and A > 0 if it's better than expected 
+       3) The critic is a neural network that inputs the state s outputs the expected return of being in state s, V(s). 
+          1) Sometimes the critic shares the same early layers as the actor network, but many times the actor and critic are completely separate networks
+          2) V(s) was collected in step 1
+       4) GAE
+          1) first compute delta_t = r_t + gamma * V(s_{t+1}) - V(s_t), for each step. delta_t is the Bellman error, or one-step advantage estimate. The final step delta_final will just be V(s_final)
+             1) _t refers to a step, s_t is the state at step t
+             2) r_t + gamma * V(s_{t+1}) is the one-step Bellman target, it is the target, V(s_t) is the prediction, it is one-step ahead of s_t, delta_t = target - prediction
+          2) Next, GAE computes the sum of discounted advantages A_t = delta_t + (gamma*lambda)\*delta_{t+1} + (gamma\*lambda)^2\*delta_{t+2}...
+             1) This previous equation is computed backward through the batch with the recursive equation A_t = delta_t + gamma*lambda * (1-done_t) * A_{t+1}
+                1) Where A_final = delta_final
+             2) The done_t flag stops advantages from leaking across episodic boundaries
+             3) lambda sets the trade-off between bias and variance. 
+                1) lambda = 0, A_t = delta_t, low variance but biased if critic is wrong
+                2) lambda = 1, is full discounted return, which is unbiased but noisy
+             4) Typically gamma=0.99, lambda=0.95, and advantages are normalized (mean 0, std 1) per batch
+    3) The second phase consists of two steps: the first step: repeat for some predefined set of epochs (usually 3-10):
+       1) Divide the results of phase 1 into mini batches and on each mini batch update the actor and critic networks with clipped policy loss, value loss, and a small entropy bonus
+          1) To compute the clipped policy loss 
+             1) first compute the ratio = pi_new(a|s) / pi_old(a|s), < 1 if an action probability decreased, > 1 if increased 
+               1) pi(a|s) is the policy, the probability of taking action a in state s. the theta in pi_theta(a|s) (e.g. old or new) refers to the weights of the policy network. 
+               2) pi_new(a|s) is calculated with the actor network, which inputs state and outputs action probabibilities (discrete) or distribution (continuous) (gaussian mean/std)
+               3) This is often done with log-probabilities, exp(ln p_new - ln p_old)
+                  1) exp(x) = e^x
+             2) Next, compute clipped policy loss = -min(ratio x A, clip(ratio, 1-epsilon, 1+epsilon) x A)
+               1) A is normalized, < 0 if worse than expected, > 0 if better than expected
+               2) epsilon is typically set to 0.2
+               3) The clipping is to keep the updated small, which prevents spiraling and training collapse, leading to model instability
+                  1) For example, the ratio stops updating a good action (A > 0) once the ratio is above 1.2, and stops updating a bad action (A < 0), when the update  is below 0.8.  
+          2) Calculate value loss with a regression
+             1) First calculate target return for a step, R_T = A_t + V_old(s_t) using raw, non normalized advantages and V_old (which is stored at collection time)
+                1) Normalized advantages are only used in the policy loss
+             2) Then calculate L_V = mean( (V_theta(s-t) - R_t)^2 ), where V_theta is the return value with the current weights of the critic network
+          3) The entropy bonus gently rewards the policy for high entropy, which promotes exploration
+             1) The entropy bonus is calculated with H(pi(.|s)) = -Sigma_a[ pi(a|s) * log(pi(a|s)) ]. 
+                1) Entropy bonus is max when the distribution of action probabilities is uniform, and decreases when it becomes more deterministic (e.g. chooses the same action every time)
+             2) For policies that are continues and Gaussian, entropy H is calculated as (1/2)ln(2(pi)(e)*sigma^2) per action dimension (more std = higher entropy). It is averaged over the batch and subtracted from the loss, the optimizer is rewarded for staying spread out. 
+          4) Loss is calculated with something like policy_loss + 0.5*value_loss - 0.01\*entropy
+             1) Those coefficients are hyperparameters and flexible. The current values are common. 
+          5) But loss is applied such that policy_loss and entropy are applied to the actor network, and value_loss is applied to the critic network (if they don't have any shared layers).
+          6) Reshuffle the batch into mini-batches at the end of each epoch  
+      4) The fourth step, throw the batch away, and repeat at step 1 until reached e.g. a max environment steps (e.g. 1 million/10^6 steps)
+        1) (Some algorithms implement an early stop where the loop ends for a batch when the policy's KL divergence from pi_old gets too large)
+
+## Prompt 12 PPO 4
+
+Still on PPO, can you check this final iteration of my notes, and address some final questions, before we move on? I want a solid foundation of PPO, so I can understand the papers that I'll have to read later on.
+
+PPO:
+ 1) There are two phases:
+    1) The first phase consits of two steps: step 1 collect a batch e.g. 2048 steps with the current policy  
+       1) The first policy initializes the likelihood of all actions to the same probability
+       2) A step is one transition: you're in state s, you take action a, you get a reward r
+       3) Collect state s, action a, reward r, the done flag, log(pi_old(a|s)) for the ratio, and the critics estimate for that sample V(s) for advantages
+       4) This collection is often over many environments, e.g. 8 environmnts * 256 steps = 2048
+    2) The second step, compute the advantage A, which is how good the action was compared to what was expected, across each step. 
+       1) To compute A, you need a critic and GAE, it's used to compute the loss where really good improvements are rewarded and bad changes aren't
+       2) A < 0 is an action was worse than expected, and A > 0 if it's better than expected 
+       3) The critic is a neural network that inputs the state s outputs the expected return of being in state s, V(s). 
+          1) Sometimes the critic shares the same early layers as the actor network, but many times the actor and critic are completely separate networks
+          2) V(s) was collected in step 1
+       4) GAE
+          1) first compute delta_t = r_t + gamma * V(s_{t+1}) - V(s_t), for each step. delta_t is the Bellman error, or one-step advantage estimate. The final step delta_final will just be V(s_final)
+             1) _t refers to a step, s_t is the state at step t
+             2) r_t + gamma * V(s_{t+1}) is the one-step Bellman target, it is the target, V(s_t) is the prediction, it is one-step ahead of s_t, delta_t = target - prediction
+          2) Next, GAE computes the sum of discounted advantages A_t = delta_t + (gamma*lambda)\*delta_{t+1} + (gamma\*lambda)^2\*delta_{t+2}...
+             1) This previous equation is computed backward through the batch with the recursive equation A_t = delta_t + gamma*lambda * (1-done_t) * A_{t+1}
+                1) Where A_final = delta_final
+             2) The done_t flag stops advantages from leaking across episodic boundaries
+             3) lambda sets the trade-off between bias and variance. 
+                1) lambda = 0, A_t = delta_t, low variance but biased if critic is wrong
+                2) lambda = 1, is full discounted return, which is unbiased but noisy
+             4) Typically gamma=0.99, lambda=0.95, and advantages are normalized (mean 0, std 1) per batch
+    3) The second phase consists of two steps: the first step: repeat for some predefined set of epochs (usually 3-10):
+       1) Divide the results of phase 1 into mini batches and on each mini batch update the actor and critic networks with clipped policy loss, value loss, and a small entropy bonus
+          1) To compute the clipped policy loss 
+             1) first compute the ratio = pi_new(a|s) / pi_old(a|s), < 1 if an action probability decreased, > 1 if increased 
+               1) pi(a|s) is the policy, the probability of taking action a in state s. the theta in pi_theta(a|s) (e.g. old or new) refers to the weights of the policy network. 
+               2) pi_new(a|s) is calculated with the actor network, which inputs state and outputs action probabibilities (discrete) or distribution (continuous) (gaussian mean/std)
+               3) This is often done with log-probabilities, exp(ln p_new - ln p_old)
+                  1) exp(x) = e^x
+             2) Next, compute clipped policy loss = -min(ratio x A, clip(ratio, 1-epsilon, 1+epsilon) x A)
+               1) A is normalized, < 0 if worse than expected, > 0 if better than expected
+               2) epsilon is typically set to 0.2
+               3) The clipping is to keep the updated small, which prevents spiraling and training collapse, leading to model instability
+                  1) For example, the ratio stops updating a good action (A > 0) once the ratio is above 1.2, and stops updating a bad action (A < 0), when the update  is below 0.8.  
+          2) Calculate value loss with a regression
+             1) First calculate target return for a step, R_T = A_t + V_old(s_t) using raw, non normalized advantages and V_old (which is stored at collection time)
+                1) Normalized advantages are only used in the policy loss
+             2) Then calculate L_V = mean( (V_theta(s-t) - R_t)^2 ), where V_theta is the return value with the current weights of the critic network
+          3) The entropy bonus gently rewards the policy for high entropy, which promotes exploration
+             1) The entropy bonus is calculated with H(pi(.|s)) = -Sigma_a[ pi(a|s) * log(pi(a|s)) ]. 
+                1) Entropy bonus is max when the distribution of action probabilities is uniform, and decreases when it becomes more deterministic (e.g. chooses the same action every time)
+             2) For policies that are continues and Gaussian, entropy H is calculated as (1/2)ln(2(pi)(e)*sigma^2) per action dimension (more std = higher entropy). It is averaged over the batch and subtracted from the loss, the optimizer is rewarded for staying spread out. 
+          4) Loss is calculated with something like policy_loss + 0.5*value_loss - 0.01\*entropy
+             1) Those coefficients are hyperparameters and flexible. The current values are common. 
+          5) But loss is applied such that policy_loss and entropy are applied to the actor network, and value_loss is applied to the critic network (if they don't have any shared layers).
+          6) Reshuffle the batch into mini-batches at the end of each epoch  
+      4) The fourth step, throw the batch away, and repeat at step 1 until reached e.g. a max environment steps (e.g. 1 million/10^6 steps)
+        1) (Some algorithms implement an early stop where the loop ends for a batch when the policy's KL divergence from pi_old gets too large)
+
+Follow up: 
+ - in phase 2, are you applying the same advantage value from the GAE to every policy loss computation? The advantage doesn't change at all across epochs or mini batches? 
+ - the policy pi_new is calculated before the actor gets updated, and pi_old is calculated after the actor gets updated, so aren't they always the same, per this flow? Or wait, pi_new is updated with each epoch, whereas pi_old always refers to the weights used during the first collection phase. 
+ - can you describe the outputs of clip()? I'm struggling to visualize how it works, e.g. a range of inputs and their outputs
+ - the policy loss is computed separately for each action yes?
+
+
+## Response 12 PPO 4
+
+Your notes are close to final. There are a few fixes and then your four questions.
+
+### Corrections
+
+1. **The final-step delta (GAE, 1) is wrong.** It isn't just V(s_final). The general form is δ_t = r_t + γ·V(s_{t+1})·(1 − done_t) − V(s_t). For the last step in the batch there are two cases:
+   - **The episode ended** (done = 1): δ = r_t − V(s_t). The future term is 0.
+   - **The batch was cut off mid-episode** (done = 0): δ = r_t + γ·V(s_{t+1}) − V(s_t), where s_{t+1} is the state after the last step. You need one extra critic evaluation on that state. This is called bootstrapping.
+
+   Your A_final = δ_final is right, since nothing follows it.
+2. **Point 2.1 (the role of A) needs rewording.** A doesn't reward "improvements." It's a signed weight on each action's probability in the policy loss. A > 0 pushes the action's probability up, A < 0 pushes it down, and the size of A sets how hard. Clipping then limits how far the probability can move.
+3. **GAE point 2:** the sum is of discounted **δ's** (one-step advantage estimates), not "advantages."
+4. **Clipping point 3.1.1:** the ratio stops being rewarded above 1.2 for good actions and below 0.8 for bad ones. Your wording "when the update is below 0.8" should say "ratio."
+5. **Minor:** "all actions equal" at initialization is only *approximately* true for a randomly initialized network. Also R_T should be R_t.
+
+Everything else is correct, including the Gaussian entropy, the raw-versus-normalized advantage point, and which network each loss term trains.
+
+### 1) Does A stay fixed across epochs and mini-batches?
+
+Yes. After collection, advantages are computed **once**, using the critic's values stored at collection time (V_old). They and the value targets R_t = A_t + V_old(s_t) are treated as constants for all epochs and mini-batches of that iteration.
+
+The reason is that the advantage measures how good the action was relative to the data-collection policy, and that's a property of the collected data. Recomputing it with a changing critic would make the target shift during the update. (Normalization is the one exception: some implementations, like SB3, normalize advantages per mini-batch instead of per batch, but the underlying values are still fixed.)
+
+### 2) π_new versus π_old
+
+Your second realization is right, and the first version in your question is mixed up. π_old is the actor's weights at the moment of collection, and π_new is the actor's weights *as it's being updated*.
+
+- Nothing like "π_old computed after the update" exists. You saved log π_old(a|s) as numbers at collection time and never recompute it.
+- π_new changes after **every mini-batch gradient step**, not just every epoch. So in the first mini-batch of the first epoch, π_new = π_old and every ratio is exactly 1. As updates accumulate, the ratios drift away from 1, and that's where clipping starts to matter.
+- After the epochs finish, the updated actor is used to collect the next batch, so it becomes the new "old" policy.
+
+### 3) What clip() does
+
+`clip(x, lo, hi)` returns x if it lies in [lo, hi], and otherwise returns the nearest boundary. With ε = 0.2, the range is [0.8, 1.2]:
+
+| ratio | 0.5 | 0.8 | 0.9 | 1.0 | 1.1 | 1.2 | 1.5 |
+|---|---|---|---|---|---|---|---|
+| clip(ratio) | 0.8 | 0.8 | 0.9 | 1.0 | 1.1 | 1.2 | 1.2 |
+
+It's the min with the unclipped term that makes the behavior depend on the sign of A. Here is the *objective* min(ratio·A, clip·A) (the loss is its negative):
+
+**Good action, A = +2**
+
+| ratio | ratio·A | clip·A | min | what happens |
+|---|---|---|---|---|
+| 0.5 | 1.0 | 1.6 | **1.0** | unclipped: gradient flows, so the probability is pushed back up |
+| 1.0 | 2.0 | 2.0 | **2.0** | normal |
+| 1.2 | 2.4 | 2.4 | **2.4** | at the boundary |
+| 1.5 | 3.0 | 2.4 | **2.4** | clipped: flat, so no more incentive to raise it |
+
+**Bad action, A = −2**
+
+| ratio | ratio·A | clip·A | min | what happens |
+|---|---|---|---|---|
+| 0.5 | −1.0 | −1.6 | **−1.6** | clipped: flat, so no more incentive to lower it |
+| 0.8 | −1.6 | −1.6 | **−1.6** | at the boundary |
+| 1.0 | −2.0 | −2.0 | **−2.0** | normal |
+| 1.5 | −3.0 | −2.4 | **−3.0** | unclipped: gradient flows, so the probability is pushed back down |
+
+The pattern: the objective goes flat in the direction where the action has already moved enough, and stays sloped where the policy moved the wrong way. So the policy can't overshoot in the helpful direction, but errors still get corrected. Where the objective is flat, the gradient is zero.
+
+### 4) Is the policy loss computed separately per action?
+
+It's computed per *sample* (one transition), then averaged. Each step in the batch contributes one term, using only the action **that was actually taken** at that step: its ratio, its advantage A_t and its clipped objective. The probabilities of the other actions don't appear in that term. They're affected indirectly, since the probabilities must sum to 1. The loss over the mini-batch is the mean of these per-sample terms, and one backward pass through π_new gives the gradient.
+
+You now have enough to read the PPO paper itself. Clipping and GAE are the two parts that take effort. If you read the paper next, it would be useful to read what the 2026 PPO variants change. After that, I can explain SAC, or write a compact PPO implementation in the style of `dqn_from_scratch.py`. Which would you prefer?
+
+
+## Summary 12 PPO 4
+
+PPO:
+ 1) There are two phases:
+    1) The first phase consits of two steps: step 1 collect a batch e.g. 2048 steps with the current policy  
+       1) The first policy initializes the likelihood of all actions to the same probability
+       2) A step is one transition: you're in state s, you take action a, you get a reward r
+       3) Collect state s, action a, reward r, the done flag, log(pi_old(a|s)) for the ratio, and the critics estimate for that sample V(s) for advantages
+       4) This collection is often over many environments, e.g. 8 environmnts * 256 steps = 2048
+    2) The second step, compute the advantage A, which is how good the action was compared to what was expected, across each step. 
+       1) To compute A, you need a critic and GAE, it's used to compute the loss where > 0 pushes the probability up, < 0 pushes the probability down, and |A| determines how much
+       2) A < 0 is an action was worse than expected, and A > 0 if it's better than expected.
+       3) Advantage is computed for each action, maybe
+       4) The critic is a neural network that inputs the state s outputs the expected return of being in state s, V(s). 
+          1) Sometimes the critic shares the same early layers as the actor network, but many times the actor and critic are completely separate networks
+          2) V(s) was collected in step 1
+       5) GAE
+          1) first compute delta_t = r_t + gamma * V(s_{t+1})(1-done_t) - V(s_t), for each step. delta_t is the Bellman error, or one-step advantage estimate. If the final state ended in the middle of an episode, you have to bootstrap V(s_{t+1})
+             1) _t refers to a step, s_t is the state at step t
+             2) r_t + gamma * V(s_{t+1}) is the one-step Bellman target, it is the target, V(s_t) is the prediction, it is one-step ahead of s_t, delta_t = target - prediction
+          2) Next, GAE computes the sum of discounted one-step advantages estimates (deltas) A_t = delta_t + (gamma*lambda)\*delta_{t+1} + (gamma\*lambda)^2\*delta_{t+2}...
+             1) This previous equation is computed backward through the batch with the recursive equation A_t = delta_t + gamma*lambda * (1-done_t) * A_{t+1}
+                1) Where A_final = delta_final
+             2) The done_t flag stops advantages from leaking across episodic boundaries
+             3) lambda sets the trade-off between bias and variance. 
+                1) lambda = 0, A_t = delta_t, low variance but biased if critic is wrong
+                2) lambda = 1, is full discounted return, which is unbiased but noisy
+             4) Typically gamma=0.99, lambda=0.95, and advantages are normalized (mean 0, std 1) per batch
+    3) The second phase consists of two steps: the first step: repeat for some predefined set of epochs (usually 3-10):
+       1) Divide the results of phase 1 into mini batches and on each mini batch update the actor and critic networks with clipped policy loss, value loss, and a small entropy bonus
+          1) To compute the clipped policy loss 
+             1) first compute the ratio = pi_new(a|s) / pi_old(a|s), < 1 if an action probability decreased, > 1 if increased 
+               1) pi(a|s) is the policy, the probability of taking action a in state s. the theta in pi_theta(a|s) (e.g. old or new) refers to the weights of the policy network. 
+               2) pi_new(a|s) is calculated with the actor network, which inputs state and outputs action probabibilities (discrete) or distribution (continuous) (gaussian mean/std)
+               3) This is often done with log-probabilities, exp(ln p_new - ln p_old)
+                  1) exp(x) = e^x
+             2) Next, compute clipped policy loss = -min(ratio x A, clip(ratio, 1-epsilon, 1+epsilon) x A)
+               1) A is normalized, < 0 if worse than expected, > 0 if better than expected
+               2) epsilon is typically set to 0.2
+               3) The clipping is to keep the updated small, which prevents spiraling and training collapse, leading to model instability
+                  1) For example, the ratio stops updating a good action (A > 0) once the ratio is above 1.2, and stops updating a bad action (A < 0), when the ratio is below 0.8.
+              3) Policy loss is computed per sample (transition), then averaged
+          2) Calculate value loss with a regression
+             1) First calculate target return for a step, R_t = A_t + V_old(s_t) using raw, non normalized advantages and V_old (which is stored at collection time)
+                1) Normalized advantages are only used in the policy loss
+             2) Then calculate L_V = mean( (V_theta(s-t) - R_t)^2 ), where V_theta is the return value with the current weights of the critic network
+          3) The entropy bonus gently rewards the policy for high entropy, which promotes exploration
+             1) The entropy bonus is calculated with H(pi(.|s)) = -Sigma_a[ pi(a|s) * log(pi(a|s)) ]. 
+                1) Entropy bonus is max when the distribution of action probabilities is uniform, and decreases when it becomes more deterministic (e.g. chooses the same action every time)
+             2) For policies that are continues and Gaussian, entropy H is calculated as (1/2)ln(2(pi)(e)*sigma^2) per action dimension (more std = higher entropy). It is averaged over the batch and subtracted from the loss, the optimizer is rewarded for staying spread out. 
+          4) Loss is calculated with something like policy_loss + 0.5*value_loss - 0.01\*entropy
+             1) Those coefficients are hyperparameters and flexible. The current values are common. 
+          5) But loss is applied such that policy_loss and entropy are applied to the actor network, and value_loss is applied to the critic network (if they don't have any shared layers).
+          6) Reshuffle the batch into mini-batches at the end of each epoch  
+      4) The fourth step, throw the batch away, and repeat at step 1 until reached e.g. a max environment steps (e.g. 1 million/10^6 steps)
+        1) (Some algorithms implement an early stop where the loop ends for a batch when the policy's KL divergence from pi_old gets too large)
+
+next, read the fucking paper at this point. it's right. 
+fair enough. i think we have a general idea of how it works. 
+
+next we need...
+
+## Prompt 13
 
 
 
-Follow up for previous ideas: 
- - In the first step, when you say collect a batch of steps, what are you collecting? A sequence of states, actions, and rewards?
- - what is the pi()?
- - what is the input for the critic network in PPO? s?
- - What is the equation for GAE?
- - how many epochs is PPO typically run on each mini batch?
- - how long do you repeat the loop in PPO? when does training stop?
- - How do you compute value loss?
- - what is the entropy bonus? how is it computed?
+## Response 13
+
+## Summary 13
