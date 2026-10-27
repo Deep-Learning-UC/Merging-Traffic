@@ -1512,10 +1512,445 @@ fair enough. i think we have a general idea of how it works.
 
 next we need...
 
-## Prompt 13
+SAC, off-policy actor-critic. the third major family of DRL models
+maybe first we need a high-level summary of what SAC is?
+
+## Prompt 13 SAC
+
+Okay, I'm ready to move on to SAC. Can you start with a high-level conceptual overview of SAC?
+
+## Response 13 SAC
+
+### The one-sentence version
+
+**SAC is DQN's replay buffer and Q-learning combined with PPO's actor, plus a twist: the agent is rewarded for staying as random as possible while still doing well.**
+
+You already know the two pieces:
+
+- From **DQN**: learn Q-values from a replay buffer of old experience (off-policy), with target networks for stability.
+- From **PPO**: have an **actor** network that outputs a policy, which handles continuous actions like steering and throttle.
+
+SAC is an **off-policy actor-critic**. It has an actor like PPO, but its critics learn **Q(s, a)** like DQN (PPO's critic learns V(s)), and it reuses old data instead of discarding it.
+
+### Why it exists
+
+The two methods you've learned each have a weakness:
+
+- **DQN** can't handle continuous actions, since the `max` over actions needs a finite list.
+- **PPO** handles them, but it throws away its data after each update, so it needs a lot of environment interaction.
+
+SAC aims to be **sample-efficient** (like DQN) and **continuous-capable** (like PPO), and it is meant to be stable enough not to need heavy tuning. DDPG (2015) tried this first and turned out to be brittle. TD3 and SAC (both 2018) are the two fixes that stuck.
+
+### The three key ideas
+
+**1. Off-policy actor-critic.**
+The critic learns Q(s, a) from the replay buffer using a Bellman target, as in DQN. The problem is the `max over a′` in that target. With continuous actions you can't enumerate them. So SAC uses the **actor** to supply the next action: instead of the max over all actions, it asks "what would my current policy do in s′?" and evaluates Q at that action. The actor is trained to output actions that the critic rates highly. The critic judges and the actor proposes, and the actor is trained by following the critic's Q-values upward.
+
+**2. Maximum entropy.**
+This is what makes SAC distinctive. Normal RL maximizes total reward. SAC maximizes **reward plus a bonus for entropy** (randomness) at every step:
+
+> maximize: Σ [ reward + α · entropy of the policy ]
+
+PPO also had an entropy bonus, but a minor one added to the loss as a small nudge. In SAC the entropy is built into the objective, so it also appears in the Bellman target and in the Q-values. The agent is asked to succeed *while keeping its options open*. The consequences:
+
+- **Built-in exploration.** The policy stays stochastic while it's learning, so it tries different things.
+- **Robustness.** The agent doesn't commit early to one narrow way of succeeding. If several actions are nearly equally good, it spreads probability across them instead of collapsing onto one.
+- **Smoother, more stable learning.** It's less likely to lock into a poor strategy early on.
+
+The coefficient **α** (the "temperature") controls the trade-off between reward and randomness. A large α means more random, and a small α means closer to greedy. Original SAC made you tune α by hand. A follow-up version (the 2018 *Soft Actor-Critic Algorithms and Applications*) tunes it **automatically**, targeting a chosen entropy level, and this is the version most libraries use.
+
+**3. Twin critics.**
+Like DQN's max, taking the best estimate of noisy Q-values tends to overestimate, and the actor then exploits those overestimates. SAC trains **two** Q-networks and uses the **smaller** of their two outputs when computing targets. This pessimism counteracts overestimation. (TD3 introduced the trick, and SAC adopted it.)
+
+### The networks
+
+| Network | Role |
+|---|---|
+| Actor π(a\|s) | Outputs a Gaussian over continuous actions (mean and std), sampled from. |
+| Critic Q₁(s, a) | Predicts the return, soft (entropy-augmented), of taking a in s. |
+| Critic Q₂(s, a) | A second, independently initialized copy. |
+| Target critics (slowly moving copies of Q₁, Q₂) | Provide stable targets, like DQN's target network. |
+
+Unlike DQN's network, the critics take the **action as an input** along with the state, because you can't output one Q per action when actions are continuous. The target networks aren't synced all at once every few hundred steps. They're blended in gradually after every update (a "soft" update), which is smoother.
+
+### The loop
+
+```
+repeat:
+    1. act in the environment by sampling from the actor; store (s, a, r, s', done) in the replay buffer
+    2. sample a random mini-batch from the buffer                   <- like DQN
+    3. update the critics toward the soft Bellman target             <- like DQN
+         target = r + γ · [ min(Q1_target, Q2_target)(s', a') − α · log π(a'|s') ],  a' sampled from the actor
+    4. update the actor to choose actions with high Q and high entropy
+    5. (adjust α automatically)
+    6. nudge the target networks slightly toward the critics
+```
+
+It updates after **every environment step** (or a few steps), not in big batches like PPO. Nothing is thrown away, because old data remains valid. That's the off-policy advantage.
+
+### How SAC compares
+
+| | DQN | PPO | SAC |
+|---|---|---|---|
+| Actions | Discrete | Both | Continuous (standard version) |
+| Data | Off-policy | On-policy | Off-policy |
+| Learns | Q | Policy + V | Policy + two Q's |
+| Sample efficiency | High | Low | High |
+| Stability | Moderate | High | High |
+| Exploration | ε-greedy | Policy randomness + small bonus | Entropy in the objective |
+| Compute per step | Low | Low | Higher (3-4 networks, update every step) |
+| Hyperparameter sensitivity | Moderate | Moderate | Lower |
+
+### Limitations
+
+- **The standard version is for continuous actions.** If your highway-env environment uses the discrete meta-actions, you'd either switch to continuous actions or use a discrete adaptation (*Soft Actor-Critic for Discrete Action Settings*, Christodoulou, 2019). The discrete version has a reputation for being less reliable than the continuous one.
+- **Heavier per step.** It has more networks and does more gradient updates per step, though it needs fewer environment steps. Wall-clock time can still be longer than PPO's if the simulator is fast and cheap. Highway-env is fairly fast, so this matters less for you.
+- **Policy shape.** It uses a Gaussian squashed through tanh to keep actions bounded. That's a modeling assumption.
+
+### Why it matters for your project
+
+SAC is the standard strong baseline for continuous control, and **many recent methods are modifications of it**: CrossQ (a SAC variant without target networks), DroQ, TQC and SimBa's SAC setups all appear in your original list. Understanding SAC is the best preparation for reading those papers. Its pairing with highway-env needs a decision, though: your custom environment would need **continuous steering and throttle** to use SAC directly.
+
+I can go through SAC's equations in detail: the soft Bellman target, the actor loss, the reparameterization trick and automatic α tuning. These parts are the hardest, and I'd do them one at a time. Or I can first show a worked numeric example of the soft Q-target, to build intuition before the full loss. Which sounds more useful?
+
+## Summary 13 SAC
 
 
+SAC
+ - Soft Actor-Critic
+ - DQN's replay buffer and Q-learning with PPO's actor, plus the agent is rewarded for staying as random as possible while still doing well
+ - It's sample efficient (PPO isn't, it discards past data), and can handle continuous actions (DQN can't) (but SAC can't do discrete actions super well), and is relatively stable (doesn't need heavy fine-tuning)
+ - Also maybe look into TD3 if there's time
+ - It takes the "max over a'" that DQN does, and for continuous actions uses an actor network to get the output the top actions that the critic rates highly, and uses those as the list
+ - most RL maximizes total reward, SAC maximizes reward + entropy - succeed while keeping options open
+ - 2018 follow-up - Soft Actor-Critic Algorithms and Applications, automatically tuned
+ - has two critics, and uses the smaller of them, and also two other target critics like in DQN to provide stable targets
 
-## Response 13
 
-## Summary 13
+ repeat: 
+  1) act in the environment from actions provided by actor, store (s, a, r s', done) in replay buffer
+  2) sample random mini-batch from buffer
+  3) update critics
+  4) update actor to choose actions with high Q and high entropy
+  5) maybe adjust alpha automatically (controls how random)
+  6) nudge target networks slightly toward critics
+
+I want to build notes like I did for PPO, maybe i can use those
+it seems like steps 3, 4, 5, and 6 are the math-heavy ones. so maybe do those one at a time. and start with the repeat, 1), and 2) 
+
+
+## Prompt 14 SAC 2
+
+For SAC, I want to build detailed notes as I did with PPO. It might be better if we do it one step or phase at a time. Can you provide the high-level structure of SAC so that we can start diving into it?
+
+## Response 14 SAC 2
+
+Here is the structure, laid out so you can follow it in order and build notes the way you did for PPO. This is the standard version, SAC with automatic temperature tuning (Haarnoja et al., 2018, *Soft Actor-Critic Algorithms and Applications*), for continuous actions.
+
+### SAC outline
+
+**Part 0: Concepts you need first**
+1. The maximum-entropy objective: reward plus α times entropy
+2. Soft Q-values and soft state value: the Bellman equation with an entropy term
+3. The policy: a Gaussian squashed by tanh, and what "log π(a|s)" means for it
+4. The reparameterization trick: how gradients flow through a *sampled* action
+5. Polyak averaging: the "soft" target-network update
+
+**Part 1: Setup (done once)**
+1. Networks: actor, two critics (Q₁, Q₂), two target critics (copies of the critics)
+2. The temperature α, stored as a learnable log α, and the target entropy
+3. The empty replay buffer, and the optimizers
+
+**Part 2: Interaction (every environment step)**
+1. Warm-up: random actions for the first N steps
+2. Afterwards, sample an action from the actor
+3. Step the environment and store (s, a, r, s′, done) in the buffer
+
+**Part 3: Learning (after each step, once the warm-up is over)**
+
+Sample a random mini-batch from the buffer, then run four updates in order:
+1. **Critic update:** compute the soft Bellman target with the twin-min and the entropy term, then apply the loss to both critics
+2. **Actor update:** the loss that pushes the policy toward high-Q, high-entropy actions, using the reparameterization trick
+3. **Temperature update:** adjust α so the policy's entropy stays near the target
+4. **Target update:** blend the target critics slightly toward the critics
+
+**Part 4: Practicalities**
+1. Typical hyperparameters and defaults
+2. When training ends and how to evaluate it
+3. Variants you'll meet in papers (discrete SAC, SAC-N, REDQ/DroQ, CrossQ)
+
+### How it compares with your PPO notes
+
+| PPO | SAC |
+|---|---|
+| Two phases: collect a batch, then update on it | No separate phases. Collect and update on every step |
+| Throw the batch away | A persistent replay buffer |
+| Advantages (GAE) | No advantages. The critic provides Q directly |
+| Critic: V(s) | Critics: Q(s, a), twin plus targets |
+| Entropy: a small loss term | Entropy built into the objective and the targets |
+| Clip to limit policy movement | No clipping. Stability comes from the twin critics, the target networks and the entropy |
+
+### Suggested order
+
+Part 0 first, since items 1 and 2 define everything else. Then Parts 1 and 2, which are short. Part 3 is the heavy one, so I'd take it one update at a time (critic, then actor, then α, then target). Part 4 comes last, once the algorithm itself is clear.
+
+I'd begin with **Part 0, items 1 and 2** (the maximum-entropy objective and soft Q-values), with a numeric example. Does that order work, or would you rather skip the concepts and begin with the loop?
+
+## Summary 14 SAC 2
+
+part 0 - concepts
+part 1 - setup
+part 2 - env interaction
+part 3 - learning
+part 4 - practicalities
+
+this is the slightly revised SAC with alpha-learning
+
+suggested order
+ - [ ] part 0
+ - [ ] parts 1 and 2
+ - [ ] part 3 critic update
+ - [ ] part 3 actor update
+ - [ ] part 3 alpha update
+ - [ ] part 3 target update
+ - [ ] part 4
+
+
+## Prompt 15 SAC 3 Part 0
+
+Alright, I like your structure and suggested order. I should say that for your explanations - this one and on - assume that I have little background knowledge since that tends to be true with DL and especially RL topics. Let's start with the concepts you described in part 0.
+
+## Response 15 SAC 3 Part 0
+
+I'll start with the first two concepts, since everything else in SAC depends on them, and keep the explanations from-scratch.
+
+# Concept 1: The maximum-entropy objective
+
+## Standard RL goal
+
+So far, the agent's goal has been to maximize the expected sum of discounted rewards:
+
+> maximize E[ r₀ + γ·r₁ + γ²·r₂ + … ]
+
+## SAC's goal
+
+SAC adds a bonus at every step for how *random* the policy is in the state it's in:
+
+> maximize E[ Σ γᵗ · ( rₜ + α · H(π(·|sₜ)) ) ]
+
+- **H(π(·|s))** is the entropy of the policy in state s. You met it in PPO: H = −Σ π(a|s)·log π(a|s). It's highest when the probabilities are spread out and 0 when one action has probability 1.
+- **α** (alpha, the "temperature") is a number you choose, or let SAC tune. It sets how much the agent cares about randomness compared with reward.
+
+The agent is asked to collect reward while staying as unpredictable as it can afford to be.
+
+## One fact you'll need later
+
+Entropy is the *average* of −log π(a|s) over actions drawn from the policy. So if you sample one action a from the policy, **−log π(a|s) is a one-sample estimate of the entropy**. For continuous actions the sum becomes an integral that you can't compute directly, so SAC uses exactly this trick. It's why log π appears throughout SAC's equations.
+
+## A one-step example
+
+Say the agent is in one state with two actions. "Left" pays 1.0 and "right" pays 0.9, and the episode ends after one step. Use α = 0.5. The objective for a policy is expected reward + α × entropy.
+
+| Policy | Expected reward | Entropy | Objective |
+|---|---|---|---|
+| Always left [1, 0] | 1.000 | 0 | 1.000 + 0 = **1.000** |
+| Uniform [0.5, 0.5] | 0.950 | 0.693 | 0.950 + 0.347 = **1.297** |
+| Mix [0.55, 0.45] | 0.955 | 0.688 | 0.955 + 0.344 = **1.299** |
+
+The best policy isn't deterministic. Giving up a tiny bit of reward is worth more than the entropy bonus. Since the rewards differ by only 0.1, committing fully to "left" isn't worth losing all the entropy.
+
+## The best policy has a formula
+
+The best maximum-entropy policy is a **softmax of the Q-values divided by α**:
+
+> π(a|s) ∝ exp( Q(s,a) / α )
+
+Here exp(1.0/0.5) = 7.39 and exp(0.9/0.5) = 6.05, which normalize to [0.55, 0.45]. That is the mix in the table. The temperature α controls how peaked this is:
+
+| α | Policy over (left, right) | Behavior |
+|---|---|---|
+| 0.1 | [0.73, 0.27] | close to greedy |
+| 0.5 | [0.55, 0.45] | balanced |
+| 10 | [0.50, 0.50] | nearly uniform |
+
+A small α makes SAC behave like ordinary RL, and a large α makes the entropy dominate and the agent act almost randomly.
+
+## Why bother?
+
+1. **Exploration.** The policy stays stochastic, so the agent keeps trying alternatives. There's no separate ε-greedy.
+2. **Robustness.** If two strategies are about equally good, SAC keeps both. For example, when merging with two gaps that are about equally good, a greedy policy locks onto one. If that gap closes, it has no fallback. A max-entropy policy has learned to use both.
+3. **Smoother learning.** The policy can't collapse early onto an unlucky or poor strategy.
+
+Entropy is measured against the reward scale. Doubling all rewards while holding α fixed makes the entropy bonus relatively half as important. That's one reason α is the most sensitive SAC setting, and why Part 3 will cover tuning it automatically.
+
+# Concept 2: Soft Q-values and soft state value
+
+## Recap: the normal Bellman equation
+
+> Q(s,a) = r + γ · V(s′), where V(s′) is the value of the next state (e.g. max Q(s′, ·) in Q-learning)
+
+## The soft version
+
+Since entropy now counts as reward, **the value of the next state must include its entropy bonus too**:
+
+> **V(s′) = E over a′∼π [ Q(s′,a′) − α · log π(a′|s′) ]**
+
+Read this as the average of Q plus α times the entropy. Remember that −log π is the one-sample estimate of entropy, so subtracting α·log π *adds* the entropy bonus. Putting it into the Q equation gives:
+
+> **Q(s,a) = r + γ · E[ Q(s′,a′) − α · log π(a′|s′) ]**, with a′ drawn from the policy at s′
+
+This is the **soft Bellman equation**, and it's the foundation for SAC's critic training. Three things to notice:
+
+- It looks like the ordinary equation, with the new term −α·log π(a′|s′) added.
+- The action a′ is *drawn from the actor*, which replaces DQN's `max` over actions and is what makes continuous actions workable.
+- Q(s,a) doesn't contain an entropy bonus for the action a itself, since a is already given. The bonus enters through the next state's value.
+
+## A numeric example
+
+Suppose the next state s′ has two actions. The critic says Q(s′, left) = 10 and Q(s′, right) = 8, and the actor's policy is [0.6, 0.4]. Take α = 0.5, γ = 0.99 and an immediate reward r = 1.
+
+For each action, compute Q − α·log π:
+
+| a′ | π | Q | −α·log π | Q − α·log π | weight × value |
+|---|---|---|---|---|---|
+| left | 0.6 | 10 | +0.255 | 10.255 | 0.6 × 10.255 = 6.153 |
+| right | 0.4 | 8 | +0.458 | 8.458 | 0.4 × 8.458 = 3.383 |
+
+> **V(s′) = 6.153 + 3.383 = 9.537**
+
+Checking against the "Q plus entropy" form: expected Q = 0.6×10 + 0.4×8 = 9.2, entropy = 0.673, and 9.2 + 0.5 × 0.673 = 9.537. ✓
+
+The soft target for Q(s,a) is therefore:
+
+> target = 1 + 0.99 × 9.537 = **10.44**
+
+An ordinary Bellman target would give 1 + 0.99 × 9.2 = 10.11. The 0.33 difference is the entropy bonus, which says that this future state is worth more because the policy there has several options.
+
+## What training actually does
+
+You can't compute that exact average over a′ when actions are continuous. So SAC **samples a single a′ from the actor** and uses its value, 10.255 or 8.458 in the example. Averaged over many samples and many mini-batches, this converges to 9.537. This is the same single-sample entropy trick from Concept 1.
+
+You'll also see, in Part 3, that "Q(s′,a′)" is actually the **smaller of two critics** (the twin-critic trick). I'm leaving that out for now so the soft Bellman idea is clear.
+
+## Summary for your notes
+
+1. Standard RL maximizes Σ γᵗ rₜ. SAC maximizes Σ γᵗ (rₜ + α·H(π(·|sₜ))).
+2. H = E[−log π(a|s)], so a sampled −log π(a|s) is a one-sample estimate of entropy.
+3. α is the temperature: low is near greedy, high is near uniform. The optimal policy is a softmax of Q/α.
+4. Entropy gives built-in exploration, robustness when several strategies are similar, and smoother learning.
+5. Soft value: V(s′) = E_{a′∼π}[Q(s′,a′) − α·log π(a′|s′)].
+6. Soft Bellman: Q(s,a) = r + γ·E[Q(s′,a′) − α·log π(a′|s′)]. The a′ is sampled from the actor, so no `max` is needed.
+
+Next in Part 0 are items 3 to 5: the Gaussian-plus-tanh policy, the reparameterization trick and Polyak averaging. They're more technical, and item 4 is probably the trickiest idea in SAC. Do you want to go through them one at a time, or have any questions on these two first?
+
+
+## Summary 15 SAC 3 Part 0
+
+
+1) Part 0 Concepts
+   1) Concept 1 maximum-entropy objective
+      1) Previous goal is to maximize expected sum of discounted rewards = max E[sum(y^t * r_t)]
+      2) SAC adds an entropy bonus = max E[sum(y^t * (r_t + alpha*H))]
+         1) The entropy bonus gives a bonus to states with policies that have multiple similar-probability actions, to take into account the possibility that those actions might be better in the future. To leave them open for exploration
+         2) From PPO, H = -sum(pi(a|s)*ln(pi(a|s))), where H is greatest when all the actions are the same probability, and least when one action is probability 1 and the rest are 0
+            1) H is also = E[ -ln(pi(a|s)) ], so -ln(pi(a|s)) is a one-sample estimate of entropy
+         3) alpha is the temperature, low is near greedy, high is near uniform
+      3) the optimal policy pi(a|s) is proportional to exp( Q(s,a) / alpha )
+   2) Concept 2 soft-Q
+      1) Previous:
+         1) Bellman expression: Q(s,a) = r + gamma*V(s')
+         2) V(s') = max Q(s',.)
+      2) The Value must now include entropy
+         1) V(s') = E over a'~pi[Q(s',a') - alpha * ln(pi(a'|s'))]
+            1) The average of Q plus alpha times entropy (entropy is -ln, so subtracting ln is adding the entropy)
+      3) The new Q equation is Q(s,a) = r + gamma*E[Q(s',a') - alpha\*ln(pi(a'|s'))], where a' is drawn from the policy at s'
+
+
+## Prompt 16
+
+These are my notes, before moving on, can you verify that they are good. Also can you explain what the notation E_{a'~pi} means? Most of the other stuff I think I understand
+
+SAC
+1) Part 0 Concepts
+   1) Concept 1 maximum-entropy objective
+      1) Previous goal is to maximize expected sum of discounted rewards = max E[sum(y^t * r_t)]
+      2) SAC adds an entropy bonus = max E[sum(y^t * (r_t + alpha*H))]
+         1) The entropy bonus gives a bonus to states with policies that have multiple similar-probability actions, to take into account the possibility that those actions might be better in the future. To leave them open for exploration
+         2) From PPO, H = -sum(pi(a|s)*ln(pi(a|s))), where H is greatest when all the actions are the same probability, and least when one action is probability 1 and the rest are 0
+            1) H is also = E[ -ln(pi(a|s)) ], so -ln(pi(a|s)) is a one-sample estimate of entropy
+         3) alpha is the temperature, low is near greedy, high is near uniform
+      3) the optimal policy pi(a|s) is proportional to exp( Q(s,a) / alpha )
+   2) Concept 2 soft-Q
+      1) Previous:
+         1) Bellman expression: Q(s,a) = r + gamma*V(s')
+         2) V(s') = max Q(s',.)
+      2) The Value must now include entropy
+         1) V(s') = E over a'~pi[Q(s',a') - alpha * ln(pi(a'|s'))]
+            1) The average of Q plus alpha times entropy (entropy is -ln, so subtracting ln is adding the entropy)
+      3) The new Q equation is Q(s,a) = r + gamma*E[Q(s',a') - alpha\*ln(pi(a'|s'))], where a' is drawn from the policy at s'
+
+## Response 16
+
+### Notes check
+
+Your notes are mostly correct. Here are the fixes.
+
+1. **1.1.2.1:** the bonus goes to the *policy* for being spread out, in each state, not to "states with policies." Rewording: "At each step the agent gets a bonus for how spread out its action probabilities are in the current state. This keeps its options open and encourages exploration." Also, the exploration benefit comes from the policy staying random now, not from "the actions might be better in the future." Also add a second benefit: robustness when several strategies are about equally good.
+2. **1.1.2.2.1:** specify what the expectation averages over. H = E_{a∼π}[ −ln π(a|s) ], the average over actions drawn from the policy. Without the subscript it's ambiguous.
+3. **1.1.3:** add that this Q is the *soft* Q-value defined in Concept 2, and that it's a softmax over actions, with α controlling how peaked it is.
+4. **1.2.3:** the expectation in the soft Bellman equation is over two things: the next action a′ drawn from the policy, and the next state s′ (which the environment may make random). The E_{a′∼π} notation covers the first, and the next-state randomness is implicit.
+
+Smaller points: ln and log mean the same thing here (the natural log), and you use y for γ in places, so make sure your final notes use one symbol. Your notes also don't yet record the one-line takeaway that the actor provides a′, replacing the `max` over actions.
+
+### What E_{a′∼π} means
+
+**E** is the **expected value**: the probability-weighted average of something over all possible outcomes. For a fair die, E[roll] = (1+2+3+4+5+6)/6 = 3.5.
+
+**a′ ∼ π** reads "a′ is drawn from (distributed according to) the policy π." The ∼ means "sampled from."
+
+**The subscript** says *which* randomness you're averaging over. E_{a′∼π}[ f(a′) ] means: draw the action a′ from the policy's probabilities, compute f(a′), and average over everything the policy might pick.
+
+For discrete actions it's a sum:
+
+> E_{a′∼π}[ f(a′) ] = Σ π(a′|s′) · f(a′)
+
+For continuous actions it's an integral, which you can't compute exactly, so SAC estimates it by drawing a sample.
+
+Using the example from before, with f(a′) = Q(s′,a′) − α·ln π(a′|s′):
+
+> E = 0.6 × 10.255 + 0.4 × 8.458 = 9.537
+
+This is the probability-weighted sum we did earlier, and it's exactly what the notation asks for. In training, you'd draw one a′ from the actor and use its f(a′). Over many samples, the average converges to 9.537.
+
+Whenever you see E_{x∼p}[...] in an RL paper, read it as "the average of this over x drawn from p." You'll see many variants, such as E_{(s,a,r,s′)∼D}[...], which means "averaged over transitions sampled from the replay buffer D." That one will appear in SAC's loss functions in Part 3.
+
+Do you have any questions about this, or shall we continue with Part 0, item 3 (the Gaussian-plus-tanh policy)?
+
+## Summary 16
+
+E_{a'~pi}, a' is drawn from (distributed according to) policy pi
+~ means sampled from
+
+discrete actions it's a sum of probabilities times the function
+fir continuous actions it's an integral, but you can estimate it with a sample
+
+SAC
+1) Part 0 Concepts
+   1) Concept 1 maximum-entropy objective
+      1) Previous goal is to maximize expected sum of discounted rewards = max E[sum(gamma^t * r_t)]
+      2) SAC adds an entropy bonus = max E[sum(gamma^t * (r_t + alpha*H))]
+         1) The entropy bonus gives a bonus to policies that have multiple similar-probability actions in a particular state. The benefit is 1) exploration from the actions staying random and 2) robustness for when several strategies are equally good
+         2) From PPO, H = -sum(pi(a|s)*ln(pi(a|s))), where H is greatest when all the actions are the same probability, and least when one action is probability 1 and the rest are 0
+            1) H is also = E_{a~pi}[ -ln(pi(a|s)) ], so -ln(pi(a|s)) is a one-sample estimate of entropy
+         3) alpha is the temperature, low is near greedy, high is near uniform
+      3) the optimal policy pi(a|s) is proportional to exp( Q(s,a) / alpha ). Q is soft Q, and it's a softmax over actions. alpha controls the peak
+   2) Concept 2 soft-Q
+      1) Previous:
+         1) Bellman expression: Q(s,a) = r + gamma*V(s')
+         2) V(s') = max Q(s',.)
+      2) The Value must now include entropy
+         1) V(s') = E over a'~pi[Q(s',a') - alpha * ln(pi(a'|s'))]
+            1) The average of Q plus alpha times entropy (entropy is -ln, so subtracting ln is adding the entropy)
+      3) The new Q equation is Q(s,a) = r + gamma*E[Q(s',a') - alpha\*ln(pi(a'|s'))], where a' is drawn from the policy at s'. a' is random from policy, s' is random from environment (implicit)
+
+Next we do part 0 items 3 to 5
