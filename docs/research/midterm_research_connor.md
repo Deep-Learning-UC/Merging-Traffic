@@ -1639,11 +1639,11 @@ I want to build notes like I did for PPO, maybe i can use those
 it seems like steps 3, 4, 5, and 6 are the math-heavy ones. so maybe do those one at a time. and start with the repeat, 1), and 2) 
 
 
-## Prompt 14 SAC 2
+## Prompt 14 SAC 2 Outline
 
 For SAC, I want to build detailed notes as I did with PPO. It might be better if we do it one step or phase at a time. Can you provide the high-level structure of SAC so that we can start diving into it?
 
-## Response 14 SAC 2
+## Response 14 SAC 2 Outline
 
 Here is the structure, laid out so you can follow it in order and build notes the way you did for PPO. This is the standard version, SAC with automatic temperature tuning (Haarnoja et al., 2018, *Soft Actor-Critic Algorithms and Applications*), for continuous actions.
 
@@ -1696,7 +1696,7 @@ Part 0 first, since items 1 and 2 define everything else. Then Parts 1 and 2, wh
 
 I'd begin with **Part 0, items 1 and 2** (the maximum-entropy objective and soft Q-values), with a numeric example. Does that order work, or would you rather skip the concepts and begin with the loop?
 
-## Summary 14 SAC 2
+## Summary 14 SAC 2 Outline
 
 part 0 - concepts
 part 1 - setup
@@ -1724,15 +1724,15 @@ Alright, I like your structure and suggested order. I should say that for your e
 
 I'll start with the first two concepts, since everything else in SAC depends on them, and keep the explanations from-scratch.
 
-# Concept 1: The maximum-entropy objective
+### Concept 1: The maximum-entropy objective
 
-## Standard RL goal
+#### Standard RL goal
 
 So far, the agent's goal has been to maximize the expected sum of discounted rewards:
 
 > maximize E[ r₀ + γ·r₁ + γ²·r₂ + … ]
 
-## SAC's goal
+#### SAC's goal
 
 SAC adds a bonus at every step for how *random* the policy is in the state it's in:
 
@@ -1743,11 +1743,11 @@ SAC adds a bonus at every step for how *random* the policy is in the state it's 
 
 The agent is asked to collect reward while staying as unpredictable as it can afford to be.
 
-## One fact you'll need later
+#### One fact you'll need later
 
 Entropy is the *average* of −log π(a|s) over actions drawn from the policy. So if you sample one action a from the policy, **−log π(a|s) is a one-sample estimate of the entropy**. For continuous actions the sum becomes an integral that you can't compute directly, so SAC uses exactly this trick. It's why log π appears throughout SAC's equations.
 
-## A one-step example
+#### A one-step example
 
 Say the agent is in one state with two actions. "Left" pays 1.0 and "right" pays 0.9, and the episode ends after one step. Use α = 0.5. The objective for a policy is expected reward + α × entropy.
 
@@ -1759,7 +1759,7 @@ Say the agent is in one state with two actions. "Left" pays 1.0 and "right" pays
 
 The best policy isn't deterministic. Giving up a tiny bit of reward is worth more than the entropy bonus. Since the rewards differ by only 0.1, committing fully to "left" isn't worth losing all the entropy.
 
-## The best policy has a formula
+#### The best policy has a formula
 
 The best maximum-entropy policy is a **softmax of the Q-values divided by α**:
 
@@ -1775,7 +1775,7 @@ Here exp(1.0/0.5) = 7.39 and exp(0.9/0.5) = 6.05, which normalize to [0.55, 0.45
 
 A small α makes SAC behave like ordinary RL, and a large α makes the entropy dominate and the agent act almost randomly.
 
-## Why bother?
+#### Why bother?
 
 1. **Exploration.** The policy stays stochastic, so the agent keeps trying alternatives. There's no separate ε-greedy.
 2. **Robustness.** If two strategies are about equally good, SAC keeps both. For example, when merging with two gaps that are about equally good, a greedy policy locks onto one. If that gap closes, it has no fallback. A max-entropy policy has learned to use both.
@@ -1783,13 +1783,13 @@ A small α makes SAC behave like ordinary RL, and a large α makes the entropy d
 
 Entropy is measured against the reward scale. Doubling all rewards while holding α fixed makes the entropy bonus relatively half as important. That's one reason α is the most sensitive SAC setting, and why Part 3 will cover tuning it automatically.
 
-# Concept 2: Soft Q-values and soft state value
+### Concept 2: Soft Q-values and soft state value
 
-## Recap: the normal Bellman equation
+#### Recap: the normal Bellman equation
 
 > Q(s,a) = r + γ · V(s′), where V(s′) is the value of the next state (e.g. max Q(s′, ·) in Q-learning)
 
-## The soft version
+#### The soft version
 
 Since entropy now counts as reward, **the value of the next state must include its entropy bonus too**:
 
@@ -1805,7 +1805,7 @@ This is the **soft Bellman equation**, and it's the foundation for SAC's critic 
 - The action a′ is *drawn from the actor*, which replaces DQN's `max` over actions and is what makes continuous actions workable.
 - Q(s,a) doesn't contain an entropy bonus for the action a itself, since a is already given. The bonus enters through the next state's value.
 
-## A numeric example
+#### A numeric example
 
 Suppose the next state s′ has two actions. The critic says Q(s′, left) = 10 and Q(s′, right) = 8, and the actor's policy is [0.6, 0.4]. Take α = 0.5, γ = 0.99 and an immediate reward r = 1.
 
@@ -1826,13 +1826,13 @@ The soft target for Q(s,a) is therefore:
 
 An ordinary Bellman target would give 1 + 0.99 × 9.2 = 10.11. The 0.33 difference is the entropy bonus, which says that this future state is worth more because the policy there has several options.
 
-## What training actually does
+#### What training actually does
 
 You can't compute that exact average over a′ when actions are continuous. So SAC **samples a single a′ from the actor** and uses its value, 10.255 or 8.458 in the example. Averaged over many samples and many mini-batches, this converges to 9.537. This is the same single-sample entropy trick from Concept 1.
 
 You'll also see, in Part 3, that "Q(s′,a′)" is actually the **smaller of two critics** (the twin-critic trick). I'm leaving that out for now so the soft Bellman idea is clear.
 
-## Summary for your notes
+#### Summary for your notes
 
 1. Standard RL maximizes Σ γᵗ rₜ. SAC maximizes Σ γᵗ (rₜ + α·H(π(·|sₜ))).
 2. H = E[−log π(a|s)], so a sampled −log π(a|s) is a one-sample estimate of entropy.
@@ -1866,7 +1866,7 @@ Next in Part 0 are items 3 to 5: the Gaussian-plus-tanh policy, the reparameteri
       3) The new Q equation is Q(s,a) = r + gamma*E[Q(s',a') - alpha\*ln(pi(a'|s'))], where a' is drawn from the policy at s'
 
 
-## Prompt 16
+## Prompt 16 SAC 3 Part 0 Check
 
 These are my notes, before moving on, can you verify that they are good. Also can you explain what the notation E_{a'~pi} means? Most of the other stuff I think I understand
 
@@ -1889,7 +1889,7 @@ SAC
             1) The average of Q plus alpha times entropy (entropy is -ln, so subtracting ln is adding the entropy)
       3) The new Q equation is Q(s,a) = r + gamma*E[Q(s',a') - alpha\*ln(pi(a'|s'))], where a' is drawn from the policy at s'
 
-## Response 16
+## Response 16 SAC 3 Part 0 Check
 
 ### Notes check
 
@@ -1926,13 +1926,12 @@ Whenever you see E_{x∼p}[...] in an RL paper, read it as "the average of this 
 
 Do you have any questions about this, or shall we continue with Part 0, item 3 (the Gaussian-plus-tanh policy)?
 
-## Summary 16
+## Summary 16 SAC 3 Part 0 Check
 
 E_{a'~pi}, a' is drawn from (distributed according to) policy pi
 ~ means sampled from
-
 discrete actions it's a sum of probabilities times the function
-fir continuous actions it's an integral, but you can estimate it with a sample
+for continuous actions it's an integral, but you can estimate it with a sample
 
 SAC
 1) Part 0 Concepts
@@ -1954,3 +1953,325 @@ SAC
       3) The new Q equation is Q(s,a) = r + gamma*E[Q(s',a') - alpha\*ln(pi(a'|s'))], where a' is drawn from the policy at s'. a' is random from policy, s' is random from environment (implicit)
 
 Next we do part 0 items 3 to 5
+
+
+## Prompt 17 SAC Part 0 Items 3-5
+
+SAC
+1) Part 0 Concepts
+   1) Concept 1 maximum-entropy objective
+      1) Previous goal is to maximize expected sum of discounted rewards = max E[sum(gamma^t * r_t)]
+      2) SAC adds an entropy bonus = max E[sum(gamma^t * (r_t + alpha*H))]
+         1) The entropy bonus gives a bonus to policies that have multiple similar-probability actions in a particular state. The benefit is 1) exploration from the actions staying random and 2) robustness for when several strategies are equally good
+         2) From PPO, H = -sum(pi(a|s)*ln(pi(a|s))), where H is greatest when all the actions are the same probability, and least when one action is probability 1 and the rest are 0
+            1) H is also = E_{a~pi}[ -ln(pi(a|s)) ], so -ln(pi(a|s)) is a one-sample estimate of entropy
+         3) alpha is the temperature, low is near greedy, high is near uniform
+      3) the optimal policy pi(a|s) is proportional to exp( Q(s,a) / alpha ). Q is soft Q, and it's a softmax over actions. alpha controls the peak
+   2) Concept 2 soft-Q
+      1) Previous:
+         1) Bellman expression: Q(s,a) = r + gamma*V(s')
+         2) V(s') = max Q(s',.)
+      2) The Value must now include entropy
+         1) V(s') = E over a'~pi[Q(s',a') - alpha * ln(pi(a'|s'))]
+            1) The average of Q plus alpha times entropy (entropy is -ln, so subtracting ln is adding the entropy)
+      3) The new Q equation is Q(s,a) = r + gamma*E[Q(s',a') - alpha\*ln(pi(a'|s'))], where a' is drawn from the policy at s'. a' is random from policy, s' is random from environment (implicit)
+
+Yes, let's continue with part 0 items 3-5. I do want to be timely with this process.
+
+## Response 17 SAC Part 0 Items 3-5
+
+Your notes are accurate and I have nothing to correct. One optional addition under 1.2.3: *the actor supplies a′, which replaces DQN's `max` over actions.* That's the reason this equation works for continuous actions.
+
+### Concept 3: The squashed Gaussian policy
+
+#### The problem
+
+With continuous actions (steering angle, acceleration) the policy can't output a probability per action, since there are infinitely many. Instead it outputs the parameters of a **probability distribution**, and the agent samples an action from it.
+
+#### What the actor outputs
+
+For each action dimension, the actor outputs a **mean μ** and a **standard deviation σ** (in practice it outputs log σ, clamped to a sensible range, so σ is always positive). A Gaussian is a bell curve: μ is the center and σ is the width. A narrow bell means the agent is confident, and a wide one means it's exploring.
+
+#### Squashing to a valid range
+
+A Gaussian sample can be any number, including very large ones, but steering and throttle have limits. So SAC does this:
+
+1. Sample u ∼ N(μ, σ²)
+2. Squash it: **a = tanh(u)**, which always lies in (−1, 1)
+3. The environment rescales a to its real range (e.g. ±0.5 rad steering)
+
+#### The log-probability correction
+
+SAC needs log π(a|s) for the entropy term. The probability of u is just the Gaussian density. But we're acting with a = tanh(u), and squashing changes the density, so a correction is needed:
+
+> log π(a|s) = log N(u; μ, σ) − Σ log(1 − tanh²(u))
+
+where the sum runs over action dimensions. The first term is the Gaussian log-density, and the second is the **change-of-variables correction** for tanh. Squashing compresses values near ±1, which concentrates probability there, and the correction accounts for that. For a single dimension the Gaussian log-density is −½·((u−μ)/σ)² − ln σ − ½·ln(2π).
+
+**Numeric example** (one dimension): μ = 0.5, σ = 0.2, and the sample is u = 0.7.
+
+- z = (0.7 − 0.5)/0.2 = 1
+- Gaussian log-density = −0.5 − ln(0.2) − 0.919 = −0.5 + 1.609 − 0.919 = **0.190**
+- a = tanh(0.7) = **0.604**
+- 1 − a² = 0.635, so the correction term is ln(0.635) = −0.455
+- log π(a|s) = 0.190 − (−0.455) = **0.645**
+
+Two things might surprise you. First, log π is **positive**. For continuous actions, π is a *density*, not a probability, and a narrow distribution has density above 1. Second, for the same reason entropy (−log π on average) can be **negative** for continuous policies. That's fine, and it matters for the target entropy in Part 1.
+
+### Concept 4: The reparameterization trick
+
+#### The problem
+
+The actor is trained to pick actions that the critic rates highly. That needs the **gradient of Q(s, a) with respect to the actor's weights**. But the action a is *sampled*, and sampling is a random operation with no gradient. Backpropagation hits a wall between the actor's output and the critic.
+
+(PPO avoided this with the log-probability gradient trick, the REINFORCE-style approach, which works but is noisy. SAC can do better because its critic is a differentiable function of the action.)
+
+#### The fix
+
+Move the randomness **outside** the network. Sample noise ε ∼ N(0, 1) that doesn't depend on any weights, then compute the action deterministically:
+
+> **u = μ + σ · ε,  a = tanh(u)**
+
+This produces the same distribution as sampling from N(μ, σ²), but now a is an ordinary differentiable function of μ and σ, and therefore of the actor's weights. The noise is just a constant input.
+
+**Example:** μ = 0.5, σ = 0.2, ε = 1.0 gives u = 0.7, a = 0.604, exactly the sample from before. Now suppose the critic says that a slightly higher action would be better. If the actor raises μ, then u goes up, a goes up, and Q goes up. Gradients flow from Q, through a, into μ and σ and then the actor's weights. The actor learns "shift μ upward in this state."
+
+An analogy: instead of asking a machine to produce a random number with a specific shape (hard to differentiate), you roll a standard die and then scale and shift the result. The scale and shift can be adjusted by gradients, and the die is a fixed input.
+
+In PyTorch this is the difference between `dist.rsample()` (reparameterized, differentiable) and `dist.sample()` (not differentiable). SAC's actor update uses `rsample()`.
+
+Two consequences to remember. This works because the critic takes the action as an *input* and is differentiable in it. And it requires a continuous action space. Discrete SAC needs a different approach, since there's no continuous a to differentiate through.
+
+### Concept 5: Polyak averaging (soft target updates)
+
+#### Recap of the problem
+
+You met target networks in DQN: a frozen copy provides stable targets, and every N steps the copy is overwritten with the current network. SAC updates its critics after *every* step, and a periodic hard copy produces sudden jumps in the targets.
+
+#### The soft update
+
+After each learning step, move the target weights a tiny bit toward the critic's weights:
+
+> **θ_target ← τ · θ + (1 − τ) · θ_target**,  with τ typically **0.005**
+
+The target keeps 99.5% of its old self and takes in 0.5% of the critic.
+
+**Example:** target weight = 1.0 and critic weight = 2.0.
+
+- After 1 update: 0.005 × 2.0 + 0.995 × 1.0 = **1.005**
+- After 200 updates, the gap has shrunk by a factor of 0.995²⁰⁰ ≈ 0.37, so the target is at roughly **1.63**
+- It takes on the order of 1/τ = 200 updates for the target to close most of the gap, and several hundred more to converge
+
+The target is therefore a smoothed, lagging copy: it follows the critic but with a delay. This gives the stability of a frozen target without the sudden jumps.
+
+Only the **critics** have target copies. The actor doesn't, since it doesn't appear in a bootstrapped target in the same way. It only supplies the next action a′.
+
+#### Summary for your notes
+
+3) **Squashed Gaussian policy**
+   1. The actor outputs μ and log σ per action dimension (log σ clamped)
+   2. Sample u ∼ N(μ, σ²), then a = tanh(u) ∈ (−1, 1), and rescale to the environment's range
+   3. log π(a|s) = log N(u; μ, σ) − Σ log(1 − tanh²(u)). The second term is the tanh correction
+   4. For continuous actions π is a density, so log π can be positive and entropy can be negative
+
+4) **Reparameterization trick**
+   1. Problem: sampling blocks gradients from Q back to the actor
+   2. Fix: u = μ + σ·ε with ε ∼ N(0,1) drawn independently of the weights, so a = tanh(u) is differentiable
+   3. Gradients flow Q → a → (μ, σ) → actor weights (`rsample()` in PyTorch)
+   4. Requires continuous actions and a critic that takes a as input
+
+5) **Polyak averaging**
+   1. θ_target ← τθ + (1−τ)θ_target, τ ≈ 0.005
+   2. A smooth, lagging copy of the critic, updated every step (instead of DQN's periodic hard copy)
+   3. Only the critics have targets
+
+That finishes Part 0. Next are **Parts 1 and 2** (setup and the interaction loop), which are short, followed by Part 3's four updates. Do you have questions on these three first, or shall I go on to Parts 1 and 2?
+
+## Summary 17 SAC Part 0 Items 3-5
+
+
+SAC
+1) Part 0 Concepts
+   1) Concept 1 maximum-entropy objective
+      1) Previous goal is to maximize expected sum of discounted rewards = max E[sum(gamma^t * r_t)]
+      2) SAC adds an entropy bonus = max E[sum(gamma^t * (r_t + alpha*H))]
+         1) The entropy bonus gives a bonus to policies that have multiple similar-probability actions in a particular state. The benefit is: 1) exploration from the actions staying random and 2) robustness for when several strategies are equally good
+         2) From PPO, H = -sum(pi(a|s)*log(pi(a|s))), where H is greatest when all the actions are the same probability, and least when one action is probability 1 and the rest are 0
+            1) log here means ln, always
+            2) H is also = E_{a~pi}[ -log(pi(a|s)) ], so -log(pi(a|s)) is a one-sample estimate of entropy
+         3) alpha is the temperature, low is near greedy, high is near uniform
+      3) the optimal policy pi(a|s) is proportional to exp( Q(s,a) / alpha ). Q is soft Q, and it's a softmax over actions. alpha controls the peak
+   2) Concept 2 soft-Q
+      1) Previous:
+         1) Bellman expression: Q(s,a) = r + gamma*V(s')
+         2) V(s') = max Q(s',.)
+      2) The Value must now include entropy
+         1) V(s') = E over a'~pi[Q(s',a') - alpha * log(pi(a'|s'))]
+            1) The average of Q plus alpha times entropy (entropy is -log, so subtracting log is adding the entropy)
+      3) The new Q equation is Q(s,a) = r + gamma*E[Q(s',a') - alpha\*log(pi(a'|s'))], where a' is drawn from the policy at s'. a' is random from policy, s' is random from environment (implicit)
+         1) the actor supplies a' which is why it can replace DQN's max over actions
+   3) Concept 3 - Squashed Guassian Policy
+      1) don't have probability for each action in a continuous action - they're infinite
+      2) The actor outputs μ and log σ (log stdev) per action dimension (log σ clamped, always positive)
+      3) Sample u ∼ N(μ, σ²), then a = tanh(u) ∈ (−1, 1) (squash), and rescale to the environment's range
+      4) log π(a|s) = log N(u; μ, σ) − Σ log(1 − tanh²(u)). The second term is the tanh correction, because a is tanh(u)
+         1) you're summing over u, the action dimensions
+         2) log pi(a|s) is needed to compute H, which is used in computing Q / the objective / the reward?
+      5) For continuous actions π is a density, so log π can be positive and entropy can be negative. 
+         1) if it were a probability its always < 1 and thus log is always negative, and entropy (-ln) positive 
+   4) Concept 4 - Reparamaterization Trick
+      1) Problem: because we're sampling a, it blocks the gradients from Q back to the actor, whivh is needed for backpropagation
+      2) Fix: u = μ + σ·ε with ε ∼ N(0,1) drawn independently of the weights, so a = tanh(u) is differentiable, epsilon is kept constant
+         1) same as rolling a random number and shifting the scaling/shifting based on that random number
+      3) Gradients flow Q → a → (μ, σ) → actor weights (`rsample()` in PyTorch)
+      4) It works because continuous actions and a critic that takes action a as input
+   5) Concept 5 - Polyak averaging
+      1) A smooth, lagging copy of the critic, updated every step (instead of DQN's periodic hard copy)
+      2) θ_target ← τθ + (1−τ)θ_target, τ ≈ 0.005 (take .5% of the critic, stays 99.5% the same)
+      3) Only the critics have targets
+
+
+
+## Prompt 18 SAC Part 0 Items 3-5 Check
+
+Here's my notes:
+
+   3) Concept 3 - Squashed Guassian Policy
+      1) don't have probability for each action in a continuous action - they're infinite
+      2) The actor outputs μ and log σ (log stdev) per action dimension (log σ clamped, always positive)
+      3) Sample u ∼ N(μ, σ²), then a = tanh(u) ∈ (−1, 1) (squash), and rescale to the environment's range
+      4) log π(a|s) = log N(u; μ, σ) − Σ log(1 − tanh²(u)). The second term is the tanh correction, because a is tanh(u)
+         1) you're summing over u, the action dimensions
+         2) log pi(a|s) is needed to compute H, which is used in computing Q / the objective / the reward?
+      5) For continuous actions π is a density, so log π can be positive and entropy can be negative. 
+         1) if it were a probability its always < 1 and thus log is always negative, and entropy (-ln) positive 
+   4) Concept 4 - Reparamaterization Trick
+      1) Problem: because we're sampling a, it blocks the gradients from Q back to the actor, whivh is needed for backpropagation
+      2) Fix: u = μ + σ·ε with ε ∼ N(0,1) drawn independently of the weights, so a = tanh(u) is differentiable, epsilon is kept constant
+         1) same as rolling a random number and shifting the scaling/shifting based on that random number
+      3) Gradients flow Q → a → (μ, σ) → actor weights (`rsample()` in PyTorch)
+      4) It works because continuous actions and a critic that takes action a as input
+   5) Concept 5 - Polyak averaging
+      1) A smooth, lagging copy of the critic, updated every step (instead of DQN's periodic hard copy)
+      2) θ_target ← τθ + (1−τ)θ_target, τ ≈ 0.005 (take .5% of the critic, stays 99.5% the same)
+      3) Only the critics have targets
+
+Quick question, when you say actor dimensions, you mean individual components of an actions (e.g. steering, throttle, etc.)? Does u correspond with an actor dimension?
+
+
+## Response 18 SAC Part 0 Items 3-5 Check
+
+Yes, an **action dimension** is one component of the action vector. In your highway-env setup with continuous actions, that's typically two: acceleration and steering. (I wrote "actor dimensions" earlier by mistake. "Action dimensions" is correct.)
+
+And yes, **u has one entry per action dimension**. Everything in the policy is a vector with the same length as the action:
+
+| | acceleration | steering |
+|---|---|---|
+| actor outputs μ | μ₁ | μ₂ |
+| actor outputs log σ | log σ₁ | log σ₂ |
+| noise ε | ε₁ | ε₂ |
+| u = μ + σ·ε | u₁ | u₂ |
+| a = tanh(u) | a₁ | a₂ |
+
+The dimensions are sampled independently, so the probability densities multiply, which means the **log-densities add**. That's why the formula has a sum:
+
+> log π(a|s) = Σ over dimensions d of [ log N(uₐ; μₐ, σₐ) − log(1 − tanh²(uₐ)) ]
+
+For example, if dimension 1 contributes 0.645 (the one-dimensional example from earlier) and dimension 2 contributes −0.30, then log π(a|s) = 0.345. My earlier numeric example used a single dimension for simplicity.
+
+#### Notes check
+
+1. **3.2:** σ is always positive because σ = exp(log σ). But **log σ itself can be negative**, so "log σ... always positive" is wrong. The clamp (e.g. to [−20, 2]) just stops σ from becoming absurdly tiny or huge.
+2. **3.4.1:** the sum is over **action dimensions**. u is a vector with one entry per dimension, and the Gaussian log-density term is also summed over dimensions.
+3. **3.4.2:** the answer to your question mark is yes. log π enters the soft Bellman target (critic update) and the actor's loss. Since −α·log π acts as an entropy bonus, it effectively behaves like extra reward.
+4. **4.2:** ε is a fresh random draw on every pass. It's "constant" only from the gradient's point of view, since it doesn't depend on the weights. Say "sampled independently of the weights, so it acts as a fixed input to backprop."
+5. **4.4:** it should read "It *requires* continuous actions and a critic that takes a as input."
+
+The rest is correct, including the density-versus-probability point and the Polyak update.
+
+### Part 1: Setup (done once)
+
+**1. Networks**
+- **Actor π_φ:** input s, outputs μ and log σ (one per action dimension). Typically two hidden layers of 256 units with ReLU.
+- **Critics Q_θ₁, Q_θ₂:** each takes the **concatenation of s and a** as input and outputs a single number, Q(s,a). The two critics have the same architecture but separate, independently initialized weights.
+- **Target critics:** copies of the two critics, initialized identical to them. They are never trained by gradient descent, only by Polyak averaging.
+
+**2. Temperature α**
+- Stored as a learnable scalar **log α** (initialized to 0, so α = 1), with α = exp(log α). Learning log α keeps α positive.
+- **Target entropy H̄:** the entropy level the policy should maintain. The standard heuristic is **−(number of action dimensions)**, so −2 for your two-dimensional action. It's negative because continuous entropy can be negative. Part 3 covers how α uses it.
+
+**3. Everything else**
+- **Replay buffer:** empty, with a capacity of about 10⁶ transitions.
+- **Optimizers:** Adam with learning rate about 3·10⁻⁴, separate ones for the actor, the critics and log α.
+- **Other hyperparameters:** γ = 0.99, τ = 0.005, batch size 256, warm-up of a few thousand steps.
+
+# Part 2: Interaction (every environment step)
+
+**1. Warm-up.** For the first N steps (SB3's default is 100; the original SAC code used 10,000), take **uniformly random actions**. This fills the buffer with diverse data before learning begins. No gradient updates happen during this period.
+
+**2. Afterwards: sample from the actor.** Compute μ and σ from the state, draw u, and set a = tanh(u). Keep the exploration noise on during training. At **evaluation** time, use the deterministic action a = tanh(μ) instead, which tends to perform better.
+
+**3. Step and store.** Execute a (rescaled to the environment's range), observe r, s′ and whether the episode ended, and store **(s, a, r, s′, done)**. Two details:
+- Store the squashed action a in (−1, 1), the one the critic will see.
+- As in your DQN code, `done` should be true for real termination (a crash), not for a time-limit truncation.
+
+**4. Learning cadence.** After each environment step, run one round of the Part 3 updates, which is the standard "one update per step" setting. Some recent methods (REDQ, DroQ) use more updates per step, which is one of the ideas you'll see in your 2025-26 reading.
+
+#### Summary for your notes
+
+1) **Part 1: Setup**
+   1. Actor: s → (μ, log σ), per action dimension
+   2. Two critics Q₁, Q₂: (s, a) → scalar, plus two target critics (copies, updated only by Polyak averaging)
+   3. log α learnable (α = exp(log α)), target entropy H̄ = −(action dimensions)
+   4. Replay buffer, Adam optimizers, γ = 0.99, τ = 0.005, batch 256
+
+2) **Part 2: Interaction**
+   1. Warm-up with uniformly random actions
+   2. Then sample from the actor (deterministic mean at evaluation)
+   3. Store (s, a, r, s′, done) with the squashed a and `done` = real termination only
+   4. One update round per environment step
+
+Next is **Part 3**, the learning updates. I'd start with the **critic update**, since it uses the soft Bellman target from Concept 2 plus the twin-min trick, and it includes a full worked numeric example. Shall I go ahead?
+
+## Summary 18 SAC Part 0 Items 3-5 Check
+
+SAC
+1) Part 0 Concepts
+   1) Concept 1 maximum-entropy objective
+      1) Previous goal is to maximize expected sum of discounted rewards = max E[sum(gamma^t * r_t)]
+      2) SAC adds an entropy bonus = max E[sum(gamma^t * (r_t + alpha*H))]
+         1) The entropy bonus gives a bonus to policies that have multiple similar-probability actions in a particular state. The benefit is: 1) exploration from the actions staying random and 2) robustness for when several strategies are equally good
+         2) From PPO, H = -sum(pi(a|s)*log(pi(a|s))), where H is greatest when all the actions are the same probability, and least when one action is probability 1 and the rest are 0
+            1) log here means ln, always
+            2) H is also = E_{a~pi}[ -log(pi(a|s)) ], so -log(pi(a|s)) is a one-sample estimate of entropy
+         3) alpha is the temperature, low is near greedy, high is near uniform
+      3) the optimal policy pi(a|s) is proportional to exp( Q(s,a) / alpha ). Q is soft Q, and it's a softmax over actions. alpha controls the peak
+   2) Concept 2 soft-Q
+      1) Previous:
+         1) Bellman expression: Q(s,a) = r + gamma*V(s')
+         2) V(s') = max Q(s',.)
+      2) The Value must now include entropy
+         1) V(s') = E over a'~pi[Q(s',a') - alpha * log(pi(a'|s'))]
+            1) The average of Q plus alpha times entropy (entropy is -log, so subtracting log is adding the entropy)
+      3) The new Q equation is Q(s,a) = r + gamma*E[Q(s',a') - alpha\*log(pi(a'|s'))], where a' is drawn from the policy at s'. a' is random from policy, s' is random from environment (implicit)
+         1) the actor supplies a' which is why it can replace DQN's max over actions
+   3) Concept 3 - Squashed Guassian Policy
+      1) don't have probability for each action in a continuous action - they're infinite
+      2) The actor outputs μ and log σ (log stdev) per action dimension (log σ clamped (prevent from being too small/big), sigma always positive because sigma=exp(log(sigma)))
+      3) Sample u ∼ N(μ, σ²), then a = tanh(u) ∈ (−1, 1) (squash), and rescale to the environment's range
+      4) log π(a|s) = log N(u; μ, σ) − Σ log(1 − tanh²(u)). The second term is the tanh correction, because a is tanh(u)
+         1) you're summing over action dimensions, u is a vector with each entry corresponding to an action dimension
+         2) log pi(a|s) is needed to compute H, which is used in computing soft Bellman target (critic update) and actor loss
+      5) For continuous actions π is a density, so log π can be positive and entropy can be negative. 
+         1) if it were a probability its always < 1 and thus log is always negative, and entropy (-ln) positive 
+   4) Concept 4 - Reparamaterization Trick
+      1) Problem: because we're sampling a, it blocks the gradients from Q back to the actor, whivh is needed for backpropagation
+      2) Fix: u = μ + σ·ε with ε ∼ N(0,1) drawn independently of the weights, so a = tanh(u) is differentiable
+         1) epsilon is sampled independently from the weights 
+         2) same as rolling a random number and shifting the scaling/shifting based on that random number
+      3) Gradients flow Q → a → (μ, σ) → actor weights (`rsample()` in PyTorch)
+      4) It requires continuous actions and a critic that takes action a as input
+   5) Concept 5 - Polyak averaging
+      1) A smooth, lagging copy of the critic, updated every step (instead of DQN's periodic hard copy)
+      2) θ_target ← τθ + (1−τ)θ_target, τ ≈ 0.005 (take .5% of the critic, stays 99.5% the same)
+      3) Only the critics have targets
