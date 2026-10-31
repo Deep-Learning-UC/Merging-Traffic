@@ -1,26 +1,14 @@
-on 10/20/22 after the meeting, she popped the midterm report that introduced requirements that have not been mentioned since the first meeting
-
- - [x] analyze requirements of the midterm report
- - [x] construct new TDL to begin research for that report
- - [ ] research 
-   - [ ] read Jace's papers
-   - [ ] find recent paper on DRL
-   - [ ] analyze model - name, authors, key techniques, performance, strengths/weaknesses, how to implement in python if it doesn't already exist
-   - [ ] repeat 5 more times
- - [ ] bullet background information from the prior research
- - [ ] how do you implement LaTeX?
- - [ ] extend TDL to begin to finalize report
-
 
 
 new TDL 
-- [ ] acquire baseline understand of DRL
-  - [x] what are the metrics - Prompt 8
-  - [ ] understand the core models in the various family of functions
-    - [x] DQN - Q learning - Prompt 7
-    - [x] PPO - policy gradient - Prompt 12
-    - [ ] SAC - off-policy actor-critic
+- [x] acquire baseline understand of DRL
+  - [x] what are the metrics - Summary 8
+  - [x] understand the core models in the various family of functions
+    - [x] DQN - Q learning - Summary 7
+    - [x] PPO - policy gradient - Summary 12
+    - [x] SAC - off-policy actor-critic - Summary 21
 - [ ] research
+  - [x] What am I look for while reading? - Summary 21
   - [ ] Starting points: 
     - [ ] PPO+, 
     - [ ] ExO-PPO, 
@@ -70,6 +58,239 @@ new TDL
 ## 4 GAIA-1: A Generative World Model for Autonomous Driving
  - from Jace
  - https://arxiv.org/abs/2309.17080 
+
+## 5 PPO+: Enhancing proximal policy optimization
+ - https://rlj.cs.umass.edu/2026/papers/Paper8.pdf
+ - https://github.com/kallel-mahdi/PPO-Plus 
+
+## 6 ExO-PPO: an Extended Off-policy Proximal Policy Optimization Algorithm
+ - https://arxiv.org/pdf/2602.09726
+ - https://github.com/HarriWxy/ExO-PPO (it's in chinese lol)
+ - feb. 2026
+
+## 7 Off-policy Distributional Q(λ): Distributional RL Without Importance Sampling
+ - Off-policy Distributional Q(lambda), (Tang, Rowland, Munos, Pires, Dabney), AISTATS 2026
+ - https://raw.githubusercontent.com/mlresearch/v300/main/assets/tang26a/tang26a.pdf 
+ - 2026
+ - can't find a github :(
+
+## 8 Reversal Q-Learning
+ - https://arxiv.org/pdf/2606.17551
+ - https://github.com/aoberai/rql 
+ - june 2026
+
+
+## 9 SIMBA: SIMPLICITY BIAS FOR SCALING UP PARAMETERS IN DEEP REINFORCEMENT LEARNING
+ - https://arxiv.org/pdf/2410.09754
+ - https://github.com/SonyResearch/simba 
+ - may 2025
+
+
+Questions for each model
+ 1) is there a free repo somewhere? (doesn't necessarily have to be from the authors)
+ 2) how does the model work overall? 
+ 3) what does it improve on contemporaries?
+ 4) what family does it fall under? 
+   1) Q-learning (DQN)
+   2) Policy Gradient (PPO)
+   3) Off-Policy Actor-Critic (SAC)
+   4) Other
+ 5) what are the action spaces that it works on?
+ 6) from the report:
+   1) name
+   2) authors
+   3) year
+   4) title
+   5) performance on metrics
+   6) notable strengths/weaknesses
+
+
+take each of these and evaluate based on the questions in summary 21, first finding if there is a repo
+    - [ ] PPO+, Kallel, Holgado-Alvarez, Tosatto, D'Eramo
+    - [ ] ExO-PPO, Wang & Yang, arXiv 2602.09726,
+    - [ ] Off-policy Distributional Q(lambda), (Tang, Rowland, Munos, Pires, Dabney), AISTATS 2026
+    - [ ] Reversal Q-learning, and (arXiv 2606.17551, June 2026)
+    - [ ] SimBa. (Lee et al., ICLR 2025)
+
+
+
+# Major Models Overview (from AI Prompting)
+
+
+# Bellmans Equation (Summary 7)
+1) Bellman's equation is how to find the estimate of `Q*` - which is `Q`. 
+2) `Q` is the expected return of an action in a particular state, and do well afterwards. 
+3) Return is the sum of discounted future rewards, represented by `max Q(s',a')`
+4) You estimate `Q` by taking the current reward `r` of taking an action `a` in state `s`, and adding a discounted (discounted because applying `gamma`) max expected return of the new state `s'`, represented by `max Q*(s', a')`. In all, `Q*(s,a) = r + gamma * max Q*(s', .)`.
+5) `max Q*(s', .)` approximates `V*(s')` 
+6) `V*(s)` is the truth, and is estimated by `V(s)`
+7) `V(s)` is the expected return of being in s, under some policy. 
+
+When you say Bellman's equation is a consistency check, the LHS of the equation is what the model currently thinks Q is, but when it takes that action in s, it calculates the RHS and updates its knowledge accordingly. The RHS may not always be accurate (particularly when it isn't familiar with the new state s') (bootstrapping = using own estimate of s'), but it will eventually approach the truth over (potentially) many episodes. This is also why it's a recipe for learning. I can see why this is a foundational equation for DRL. 
+
+# DQN (Q-learning) (Summary 7)
+1) The previous process involves storing `Q(s,a)` (or what the model thinks `Q(s,a)` is) for every possible action in every possible state, which is a significant memory overhead, and unfeasble for situations such as automated driving (with many states that have each have many actions).
+2) DQN improves on that process, by replacing that table with a deep neural network that learns `Q(s,a)` from `s`, with a predefined set of actions `a` in each state. The input is a state, the output is the Q of each action in that state. 
+3) Thus, if `a` is continuous or varies between states (such that two states may have different sets of actions), DQN may not be the appropriate model. (The inconsistency between states can be fixed with action masking)
+4) DQN uses the two sides of Bellman's equation, LHS: `Q(s,a)` and RHS: `r + lambda * max Q(s', .)` to compute the loss. The LHS is the current prediction (`y-hat`), the RHS is the target or label or ground truth (`y`).
+5) The most naive way to apply neural network + Q learning is to train on every new subsequent state. The main problems with this are 1) a skewed distribution in the variance of states (consecutive states tend to be similar), and 2) that the agent doesn't actually *know* the target, and the target changes with learning. 
+6) The first point 1) is addressed in DQN with a replay buffer, where the agent accumulates every transition into a memory (replay buffer), and trains on mini-batches from its remembered tranistions instead of consecutive states.
+7) Transitions consist of (s, a, r, s', done), which are the prior state, the current action, the reward of that action, the new state, and whether the agent accomplished the goal, which is defined by the environment (e.g. in the corridor example, making it to the last room), or if the agent crashed. These are all the variables that the agent needs to predict Q, and compute the loss. 
+8) The second point 2) is addressed by creating a duplicate network that computes the target, and gets updated significantly less frequently. This allows the target to be static enough for loss to be calculated without the DQN chasing its own tail. Thus, the first network computes `Q(s,a)` when making a prediction (`y-hat`), and the second frozen networks computes `max Q(s', .)` when computing the target `y` when computing the loss. 
+
+Follow-up questions for DQN:
+1) When every transition is stored in the replay buffer, isn't there still a higher proportion of very similar states (e.g. the car is driving and isn't near anyone), which adds bias to training? Or is the original problem not the proporition of similar states but their consecutive nature?
+ - **Response:** Yes that is a problem, replay buffer fixes the consecutive problem. 
+2) Isn't the storage of transitions in the replay buffer a significant memory overhead? Or is there a limit to the amount of transitions that it stores, where it only keeps the X most recent (or highest value?) transitions?
+ - **Response:** yes, typically 10^5 or 10^6 transitions
+3) What activation functions does the network in DQN typically use? ReLU? And I assume it uses softmax to compute the output?
+ - **Response:** ReLU yes, not softmax just does raw linear
+
+# PPO (policy gradient) (Summary 12)
+ 1) There are two phases:
+    1) The first phase consits of two steps: step 1 collect a batch e.g. 2048 steps with the current policy  
+       1) The first policy initializes the likelihood of all actions to the same probability
+       2) A step is one transition: you're in state s, you take action a, you get a reward r
+       3) Collect state s, action a, reward r, the done flag, log(pi_old(a|s)) for the ratio, and the critics estimate for that sample V(s) for advantages
+       4) This collection is often over many environments, e.g. 8 environmnts * 256 steps = 2048
+    2) The second step, compute the advantage A, which is how good the action was compared to what was expected, across each step. 
+       1) To compute A, you need a critic and GAE, it's used to compute the loss where > 0 pushes the probability up, < 0 pushes the probability down, and |A| determines how much
+       2) A < 0 is an action was worse than expected, and A > 0 if it's better than expected.
+       3) Advantage is computed for each action, maybe
+       4) The critic is a neural network that inputs the state s outputs the expected return of being in state s, V(s). 
+          1) Sometimes the critic shares the same early layers as the actor network, but many times the actor and critic are completely separate networks
+          2) V(s) was collected in step 1
+       5) GAE
+          1) first compute delta_t = r_t + gamma * V(s_{t+1})(1-done_t) - V(s_t), for each step. delta_t is the Bellman error, or one-step advantage estimate. If the final state ended in the middle of an episode, you have to bootstrap V(s_{t+1})
+             1) _t refers to a step, s_t is the state at step t
+             2) r_t + gamma * V(s_{t+1}) is the one-step Bellman target, it is the target, V(s_t) is the prediction, it is one-step ahead of s_t, delta_t = target - prediction
+          2) Next, GAE computes the sum of discounted one-step advantages estimates (deltas) A_t = delta_t + (gamma*lambda)\*delta_{t+1} + (gamma\*lambda)^2\*delta_{t+2}...
+             1) This previous equation is computed backward through the batch with the recursive equation A_t = delta_t + gamma*lambda * (1-done_t) * A_{t+1}
+                1) Where A_final = delta_final
+             2) The done_t flag stops advantages from leaking across episodic boundaries
+             3) lambda sets the trade-off between bias and variance. 
+                1) lambda = 0, A_t = delta_t, low variance but biased if critic is wrong
+                2) lambda = 1, is full discounted return, which is unbiased but noisy
+             4) Typically gamma=0.99, lambda=0.95, and advantages are normalized (mean 0, std 1) per batch
+    3) The second phase consists of two steps: the first step: repeat for some predefined set of epochs (usually 3-10):
+       1) Divide the results of phase 1 into mini batches and on each mini batch update the actor and critic networks with clipped policy loss, value loss, and a small entropy bonus
+          1) To compute the clipped policy loss 
+             1) first compute the ratio = pi_new(a|s) / pi_old(a|s), < 1 if an action probability decreased, > 1 if increased 
+               1) pi(a|s) is the policy, the probability of taking action a in state s. the theta in pi_theta(a|s) (e.g. old or new) refers to the weights of the policy network. 
+               2) pi_new(a|s) is calculated with the actor network, which inputs state and outputs action probabibilities (discrete) or distribution (continuous) (gaussian mean/std)
+               3) This is often done with log-probabilities, exp(ln p_new - ln p_old)
+                  1) exp(x) = e^x
+             2) Next, compute clipped policy loss = -min(ratio x A, clip(ratio, 1-epsilon, 1+epsilon) x A)
+               1) A is normalized, < 0 if worse than expected, > 0 if better than expected
+               2) epsilon is typically set to 0.2
+               3) The clipping is to keep the updated small, which prevents spiraling and training collapse, leading to model instability
+                  1) For example, the ratio stops updating a good action (A > 0) once the ratio is above 1.2, and stops updating a bad action (A < 0), when the ratio is below 0.8.
+              3) Policy loss is computed per sample (transition), then averaged
+          2) Calculate value loss with a regression
+             1) First calculate target return for a step, R_t = A_t + V_old(s_t) using raw, non normalized advantages and V_old (which is stored at collection time)
+                1) Normalized advantages are only used in the policy loss
+             2) Then calculate L_V = mean( (V_theta(s-t) - R_t)^2 ), where V_theta is the return value with the current weights of the critic network
+          3) The entropy bonus gently rewards the policy for high entropy, which promotes exploration
+             1) The entropy bonus is calculated with H(pi(.|s)) = -Sigma_a[ pi(a|s) * log(pi(a|s)) ]. 
+                1) Entropy bonus is max when the distribution of action probabilities is uniform, and decreases when it becomes more deterministic (e.g. chooses the same action every time)
+             2) For policies that are continues and Gaussian, entropy H is calculated as (1/2)ln(2(pi)(e)*sigma^2) per action dimension (more std = higher entropy). It is averaged over the batch and subtracted from the loss, the optimizer is rewarded for staying spread out. 
+          4) Loss is calculated with something like policy_loss + 0.5*value_loss - 0.01\*entropy
+             1) Those coefficients are hyperparameters and flexible. The current values are common. 
+          5) But loss is applied such that policy_loss and entropy are applied to the actor network, and value_loss is applied to the critic network (if they don't have any shared layers).
+          6) Reshuffle the batch into mini-batches at the end of each epoch  
+      4) The fourth step, throw the batch away, and repeat at step 1 until reached e.g. a max environment steps (e.g. 1 million/10^6 steps)
+        1) (Some algorithms implement an early stop where the loop ends for a batch when the policy's KL divergence from pi_old gets too large)
+
+
+# SAC (off-policy actor-critic) (Summary 21) 
+1) Part 0 Concepts
+   1) Concept 1 maximum-entropy objective
+      1) Previous goal is to maximize expected sum of discounted rewards = max E[sum(gamma^t * r_t)]
+      2) SAC adds an entropy bonus = max E[sum(gamma^t * (r_t + alpha*H))]
+         1) The entropy bonus gives a bonus to policies that have multiple similar-probability actions in a particular state. The benefit is: 1) exploration from the actions staying random and 2) robustness for when several strategies are equally good
+         2) From PPO, H = -sum(pi(a|s)*log(pi(a|s))), where H is greatest when all the actions are the same probability, and least when one action is probability 1 and the rest are 0
+            1) log here means ln, always
+            2) H is also = E_{a~pi}[ -log(pi(a|s)) ], so -log(pi(a|s)) is a one-sample estimate of entropy
+         3) alpha is the temperature, low is near greedy, high is near uniform
+      3) the optimal policy pi(a|s) is proportional to exp( Q(s,a) / alpha ). Q is soft Q, and it's a softmax over actions. alpha controls the peak
+   2) Concept 2 soft-Q
+      1) Previous:
+         1) Bellman expression: Q(s,a) = r + gamma*V(s')
+         2) V(s') = max Q(s',.)
+      2) The Value must now include entropy
+         1) V(s') = E over a'~pi[Q(s',a') - alpha * log(pi(a'|s'))]
+            1) The average of Q plus alpha times entropy (entropy is -log, so subtracting log is adding the entropy)
+      3) The new Q equation is Q(s,a) = r + gamma*E[Q(s',a') - alpha\*log(pi(a'|s'))], where a' is drawn from the policy at s'. a' is random from policy, s' is random from environment (implicit)
+         1) the actor supplies a' which is why it can replace DQN's max over actions
+   3) Concept 3 - Squashed Guassian Policy
+      1) don't have probability for each action in a continuous action - they're infinite
+      2) The actor outputs μ and log σ (log stdev) per action dimension (log σ clamped (prevent from being too small/big), sigma always positive because sigma=exp(log(sigma)))
+      3) Sample u ∼ N(μ, σ²), then a = tanh(u) ∈ (−1, 1) (squash), and rescale to the environment's range
+      4) log π(a|s) = log N(u; μ, σ) − Σ log(1 − tanh²(u)). The second term is the tanh correction, because a is tanh(u)
+         1) you're summing over action dimensions, u is a vector with each entry corresponding to an action dimension
+         2) log pi(a|s) is needed to compute H, which is used in computing soft Bellman target (critic update) and actor loss
+      5) For continuous actions π is a density, so log π can be positive and entropy can be negative. 
+         1) if it were a probability its always < 1 and thus log is always negative, and entropy (-ln) positive 
+   4) Concept 4 - Reparamaterization Trick
+      1) Problem: because we're sampling a, it blocks the gradients from Q back to the actor, whivh is needed for backpropagation
+      2) Fix: u = μ + σ·ε with ε ∼ N(0,1) drawn independently of the weights, so a = tanh(u) is differentiable
+         1) epsilon is sampled independently from the weights 
+         2) same as rolling a random number and shifting the scaling/shifting based on that random number
+      3) Gradients flow Q → a → (μ, σ) → actor weights (`rsample()` in PyTorch)
+      4) It requires continuous actions and a critic that takes action a as input
+   5) Concept 5 - Polyak averaging
+      1) A smooth, lagging copy of the critic, updated every step (instead of DQN's periodic hard copy)
+      2) θ_target ← τθ + (1−τ)θ_target, τ ≈ 0.005 (take .5% of the critic, stays 99.5% the same)
+      3) Only the critics have targets
+1) Setup (once)
+   1) Actor network (pi_phi): input state s → output action distribution (if continuous) (μ, log σ) per action dimension
+      1) typically two hidden layers, 256 units ReLU
+   2) Two critic networks Q₁, Q₂ (Q_theta1, Q_theta2): input (state s, sampled action a) → scalar (Q(s,a))
+   3) two target critics (copies, updated only by Polyak averaging, not gradient descent)
+   3) log α (temperature) learnable (α = exp(log α), alpha just stored as log(alpha)), target entropy H̄ = −(num of action dimensions)
+   4) Replay buffer, Adam optimizers (3*10-4, 0.0003), γ = 0.99, τ = 0.005, batch size 256
+2) Interaction (every environment step)
+   1) Warm-up with uniformly random actions
+      1) e.g. 100-10,000 steps, fills up buffer, no gradient updates
+   2) Then sample from the actor (deterministic mean at evaluation)
+   3) Store (s, a, r, s′, done) with the squashed a and `done` = real termination only
+      1) remember a is rescaled and corrects tanh()
+   4) One update round per environment step (see Part 3))
+3) Learning
+   1) Critic Update
+      1) Sample a mini-batch of (s, a, r, s′, done) from the buffer
+      2) Sample a′ from the *current* actor at s′ and compute log π(a′|s′) (no gradient) (aka one sample estimate of entropy)
+      3) Evaluate a′ with both *target* critics and take the **minimum** (counters overestimation)
+      4) Soft value of s′ (V(s')) = min Q̄ − α·log π(a′|s′)
+         1) Q-bar refers to target
+      5) y = r + γ(1 − done)·[min Q̄(s′,a′) − α·log π(a′|s′)], y is a constant (no gradient)
+         1) y is the target
+      6) L = mean[(Q₁(s,a) − y)² + (Q₂(s,a) − y)²], using the buffer's a and the online critics
+      7) backward pass, Adam on both critics
+      8) Only the online critics' weights change in this step
+   2) Actor Update
+      1) Use the batch's states s only
+      2) Sample ã = tanh(μ + σ·ε) from the current actor (reparameterized) and compute log π(ã|s)
+      3) Score ã with both **online** critics and take the min
+      4) L_actor = mean[α·log π(ã|s) − min(Q₁, Q₂)(s, ã)]
+      5) Gradient path: Q → ã → (μ, σ) → actor weights; only the actor's optimizer steps
+      6) α is a constant here, and critic weights are unchanged
+      7) Minimizing the loss = maximizing the soft value: high Q plus high entropy
+   3) Temperature Update
+      1) set target entropy, and update alpha to remain near this entropy target
+         1) raises α when entropy is below target and lowers it when above
+      2) L(α) = mean[−α·(log π(ã|s) + H̄)], learning log α
+      3) H̄ = −(action dimensions)
+   4) Target Critic Update
+      1) Polyak average
+      2) θ̄ ← τθ + (1−τ)θ̄ for both critics, τ = 0.005
+4) Practicalities
+   1) most hyperparams already mentioned
+   2) buffer size 10^6
+   3) log sigma clamp [-20, 2]
+   4) SAC is generally less sensitive to hyper parameters
+   5) total env steps, 10^5 or 10^6
+   6) separate evaluation environment, periodically, with the deterministic action from tanh(u)
 
 
 
@@ -2087,7 +2308,7 @@ Only the **critics** have target copies. The actor doesn't, since it doesn't app
 
 That finishes Part 0. Next are **Parts 1 and 2** (setup and the interaction loop), which are short, followed by Part 3's four updates. Do you have questions on these three first, or shall I go on to Parts 1 and 2?
 
-## Summary 17 SAC Part 0 Items 3-5
+## Summary 17 SAC Part 0 Items 3-5 and Part 1,2
 
 
 SAC
@@ -2132,7 +2353,7 @@ SAC
 
 
 
-## Prompt 18 SAC Part 0 Items 3-5 Check
+## Prompt 18 SAC Part 0 Items 3-5 Check and Part 1,2
 
 Here's my notes:
 
@@ -2205,7 +2426,7 @@ The rest is correct, including the density-versus-probability point and the Poly
 - **Optimizers:** Adam with learning rate about 3·10⁻⁴, separate ones for the actor, the critics and log α.
 - **Other hyperparameters:** γ = 0.99, τ = 0.005, batch size 256, warm-up of a few thousand steps.
 
-# Part 2: Interaction (every environment step)
+### Part 2: Interaction (every environment step)
 
 **1. Warm-up.** For the first N steps (SB3's default is 100; the original SAC code used 10,000), take **uniformly random actions**. This fills the buffer with diverse data before learning begins. No gradient updates happen during this period.
 
@@ -2233,7 +2454,7 @@ The rest is correct, including the density-versus-probability point and the Poly
 
 Next is **Part 3**, the learning updates. I'd start with the **critic update**, since it uses the soft Bellman target from Concept 2 plus the twin-min trick, and it includes a full worked numeric example. Shall I go ahead?
 
-## Summary 18 SAC Part 0 Items 3-5 Check
+## Summary 18 SAC Part 0 Items 3-5 Check and Part 1,2
 
 SAC
 1) Part 0 Concepts
@@ -2275,3 +2496,680 @@ SAC
       1) A smooth, lagging copy of the critic, updated every step (instead of DQN's periodic hard copy)
       2) θ_target ← τθ + (1−τ)θ_target, τ ≈ 0.005 (take .5% of the critic, stays 99.5% the same)
       3) Only the critics have targets
+1) Setup (once)
+   1) Actor network (pi_phi): input state s → output action distribution (if continuous) (μ, log σ) per action dimension
+      1) typically two hidden layers, 256 units ReLU
+   2) Two critic networks Q₁, Q₂ (Q_theta1, Q_theta2): input (state s, sampled action a) → scalar (Q(s,a))
+   3) two target critics (copies, updated only by Polyak averaging, not gradient descent)
+   3) log α (temperature) learnable (α = exp(log α), alpha just stored as log(alpha)), target entropy H̄ = −(num of action dimensions)
+   4) Replay buffer, Adam optimizers (3*10-4, 0.0003), γ = 0.99, τ = 0.005, batch size 256
+2) Interaction (every environment step)
+   1) Warm-up with uniformly random actions
+      1) e.g. 100-10,000 steps, fills up buffer, no gradient updates
+   2) Then sample from the actor (deterministic mean at evaluation)
+   3) Store (s, a, r, s′, done) with the squashed a and `done` = real termination only
+      1) remember a is rescaled and corrects tanh()
+   4) One update round per environment step (see Part 3))
+
+
+suggested order
+ - [x] part 0 - concepts
+ - [x] parts 1 and 2 - set up, interaction
+ - [ ] part 3 critic update
+ - [ ] part 3 actor update
+ - [ ] part 3 alpha update
+ - [ ] part 3 target update
+ - [ ] part 4 - practicalities
+ - [ ] check notes
+
+## Prompt 19 SAC Part 3 1/4 Critic Update
+
+Yes, proceed with the critic update
+
+## Response 19 SAC Part 3 1/4 Critic Update
+
+### Part 3, Update 1: The critic update
+
+#### Where this fits
+
+Each environment step in Part 2 is followed by one round of learning. A round starts by sampling a random mini-batch of B transitions (s, a, r, s′, done) from the replay buffer, typically B = 256. The same batch is then used for four updates in order: **critics, actor, α, targets**. We're doing the first one.
+
+**Goal:** train both critics so that Q(s,a) matches the **soft Bellman target** from Concept 2. This is regression, as with DQN's critic and PPO's value loss. We compute a target y (the "label") and move each critic's prediction toward it.
+
+#### The steps
+
+**Step 1: Get the next action a′ from the *current actor*.**
+For each s′ in the batch, run the actor to get μ and σ, sample a fresh a′ = tanh(u), and compute log π(a′|s′), including the tanh correction.
+
+The buffer also stores an action, but that's the action the agent took in s. We need a *different* action, the one the *current policy* would take in s′, because the soft Bellman equation averages over a′ ∼ π. This a′ is never stored. It's newly sampled on every update, and no gradients are needed through it here.
+
+**Step 2: Evaluate a′ with the two *target* critics.**
+Compute Q̄₁(s′, a′) and Q̄₂(s′, a′), where the bar marks the target networks (the slow Polyak copies).
+
+**Step 3: Take the minimum.**
+Use min(Q̄₁, Q̄₂). Q-estimates are noisy. Taking a max or relying on one critic tends to overestimate, and the actor then chases those overestimates. The minimum is a pessimistic estimate that counteracts this, as TD3 first showed. Note that this is **one** minimum, shared by both critics.
+
+**Step 4: Subtract the entropy term, giving the soft value of s′.**
+
+> V(s′) ≈ min(Q̄₁, Q̄₂)(s′, a′) − α · log π(a′|s′)
+
+This is the sampled version of Concept 2's E_{a′∼π}[Q(s′,a′) − α·log π(a′|s′)]. Here α is treated as a **constant** (no gradient to α in this step).
+
+**Step 5: Build the target.**
+
+> **y = r + γ · (1 − done) · [ min(Q̄₁, Q̄₂)(s′, a′) − α · log π(a′|s′) ]**
+
+If `done` = 1 (the episode really ended, e.g. a crash), nothing follows, so y = r. This is the same done-handling as in your DQN and GAE work. Compute y once per transition, and use it for both critics.
+
+**Step 6: Compute the loss and update.**
+For each critic, evaluate the prediction at the buffer's (s, a) with the *online* critic, and compare:
+
+> L = mean over the batch of [ (Q₁(s,a) − y)² + (Q₂(s,a) − y)² ]
+
+(Some implementations put a factor of ½ in front or average the two critic losses. That only rescales the gradient.) One backward pass, then an Adam step on both critics' weights.
+
+**The target y is a constant.** No gradient flows through it. That means the target critics, the actor and α are all treated as fixed numbers here. Only the **online critics' weights** change in this update. It's the same "frozen target" idea as in DQN.
+
+#### Which network does what
+
+| Quantity | Computed by |
+|---|---|
+| a′ and log π(a′\|s′) | The **current actor** (fresh sample, no gradient) |
+| Q̄₁(s′,a′), Q̄₂(s′,a′) | The two **target** critics |
+| Q₁(s,a), Q₂(s,a) | The two **online** critics (these receive the gradient) |
+| The action a in Q(s,a) | The **buffer** (the action the agent actually took) |
+
+#### A numeric example
+
+Take γ = 0.99 and α = 0.2. One transition has r = 1 and done = 0.
+
+**Next-state side:**
+- The actor samples a′ and reports log π(a′|s′) = −1.0.
+- The target critics say Q̄₁(s′,a′) = 10.0 and Q̄₂(s′,a′) = 9.4.
+- Minimum: 9.4.
+- Soft value: 9.4 − 0.2 × (−1.0) = 9.4 + 0.2 = **9.6**. The entropy term here is a +0.2 bonus.
+- Target: y = 1 + 0.99 × 9.6 = **10.504**.
+
+**Current-state side:** the online critics predict Q₁(s,a) = 9.8 and Q₂(s,a) = 11.0.
+
+| | prediction | target | error | squared error |
+|---|---|---|---|---|
+| Q₁ | 9.8 | 10.504 | −0.704 | 0.496 |
+| Q₂ | 11.0 | 10.504 | +0.496 | 0.246 |
+
+The loss for this transition is 0.496 + 0.246 = 0.742. The gradient pushes Q₁ up toward 10.504 and Q₂ down toward it. The real loss averages this over 256 transitions.
+
+**Why the min matters:** using Q̄₁ alone would give 10.0 + 0.2 = 10.2, so y = 1 + 0.99 × 10.2 = 11.098, which is 0.59 higher. Repeated across millions of updates, this kind of upward bias compounds. That's the overestimation the twin critics avoid.
+
+**A terminal transition:** if done = 1, then y = r = 1, no matter what the target critics say.
+
+#### In code
+
+```python
+with torch.no_grad():
+    a2, logp2 = actor.sample(s2)                      # fresh a' and log pi(a'|s') from the current actor
+    q_targ = torch.min(q1_targ(s2, a2), q2_targ(s2, a2))
+    y = r + gamma * (1 - done) * (q_targ - alpha * logp2)
+
+critic_loss = F.mse_loss(q1(s, a), y) + F.mse_loss(q2(s, a), y)
+critic_opt.zero_grad(); critic_loss.backward(); critic_opt.step()
+```
+
+`torch.no_grad()` is what makes y a constant. Here `a` is the buffer's action and `a2` is the freshly sampled one.
+
+#### Common confusions
+
+- **Why isn't a the actor's sample?** The critic should learn Q for whatever action was actually taken, even if an older policy chose it. This is what lets SAC learn from old data. The next action a′, in contrast, belongs to the *current* policy, because that's the policy being evaluated.
+- **Why is the entropy bonus placed on the next state?** Q(s,a) covers the reward now plus everything after. The entropy of the action in s is already "spent" and counted in the previous step's target. So each step's target adds the entropy of the *next* decision.
+- **Why two losses with one target?** The two critics start with different random weights, so they make different errors. That's what makes the minimum useful. They share a target but each is trained on its own prediction.
+
+#### Summary for your notes
+
+1) **Part 3, Update 1: Critic**
+   1. Sample a mini-batch of (s, a, r, s′, done) from the buffer
+   2. Sample a′ from the *current* actor at s′ and compute log π(a′|s′) (no gradient)
+   3. Evaluate a′ with both *target* critics and take the **minimum** (counters overestimation)
+   4. Soft value of s′ = min Q̄ − α·log π(a′|s′)
+   5. y = r + γ(1 − done)·[min Q̄(s′,a′) − α·log π(a′|s′)], a constant (no gradient)
+   6. L = mean[(Q₁(s,a) − y)² + (Q₂(s,a) − y)²], using the buffer's a and the online critics
+   7. Only the online critics' weights change in this step
+
+The next update is **the actor**. It uses the reparameterization trick from Concept 4 together with this critic. It's the most conceptually involved one: the actor is trained to maximize min Q(s, a_new) − α·log π, and the loss flows through the critics without changing them. Shall I go ahead with that, or do you have questions on the critic update first?
+
+## Summary 19 SAC Part 3 1/4 Critic Update
+
+3) Learning
+   1) Critic Update
+      1) Sample a mini-batch of (s, a, r, s′, done) from the buffer
+      2) Sample a′ from the *current* actor at s′ and compute log π(a′|s′) (no gradient) (aka one sample estimate of entropy)
+      3) Evaluate a′ with both *target* critics and take the **minimum** (counters overestimation)
+      4) Soft value of s′ (V(s')) = min Q̄ − α·log π(a′|s′)
+         1) Q-bar refers to target
+      5) y = r + γ(1 − done)·[min Q̄(s′,a′) − α·log π(a′|s′)], y is a constant (no gradient)
+         1) y is the target
+      6) L = mean[(Q₁(s,a) − y)² + (Q₂(s,a) − y)²], using the buffer's a and the online critics
+      7) backward pass, Adam on both critics
+      8) Only the online critics' weights change in this step
+
+suggested order
+ - [x] part 0 - concepts
+ - [x] parts 1 and 2 - set up, interaction
+ - [x] part 3 critic update
+ - [ ] part 3 actor update
+ - [ ] part 3 alpha update
+ - [ ] part 3 target update
+ - [ ] part 4 - practicalities
+ - [ ] check notes
+
+
+## Prompt 20 SAC Part 3 2/4 Actor Update
+
+No questions, proceed with the actor update
+
+## Response 20 SAC Part 3 2/4 Actor Update
+
+### Part 3, Update 2: The actor update
+
+#### Goal
+
+Train the actor to pick actions that the critics rate highly, while keeping the policy spread out (the entropy bonus). The critics don't change in this step. They act as a fixed judge, and only the actor's weights are updated.
+
+#### The loss
+
+> **L_actor = mean over the batch of [ α · log π(ã|s) − min(Q₁(s, ã), Q₂(s, ã)) ]**
+
+Here ã is a **freshly sampled action from the current actor**, and the average is taken over states s from the mini-batch. Minimizing this loss does two things at once:
+
+- **Minimizing −Q:** the actor is pushed toward actions with high Q-values.
+- **Minimizing α·log π:** since −log π is the entropy estimate, this rewards a spread-out policy, and it's the same entropy bonus as in the objective.
+
+It's the negative of the quantity SAC wants to maximize, min Q − α·log π, which is the soft value from Concept 2. In words: **choose the action distribution that maximizes the soft value of the current state.**
+
+(Why this form? The ideal policy from Concept 1 is π ∝ exp(Q/α). Making the actor as close as possible to that distribution, measured by KL divergence, reduces to exactly this loss. You don't need that derivation yet, but it explains why the loss isn't arbitrary.)
+
+#### The steps
+
+**Step 1: Use the same mini-batch, but only its states s.**
+The buffer's actions a and rewards aren't needed for this update. The actions will be newly generated.
+
+**Step 2: Sample ã from the current actor, with the reparameterization trick.**
+The actor outputs μ and σ for each s, then:
+
+> u = μ + σ·ε,  ã = tanh(u),  with ε ∼ N(0, 1)
+
+Compute log π(ã|s) with the tanh correction, as in Concept 3. This is Concept 4's trick in action. Without it, no gradient could flow from the critic back to the actor.
+
+**Step 3: Score ã with the two *online* critics and take the minimum.**
+Compute min(Q₁(s, ã), Q₂(s, ã)). The twin-min is used again, because an actor that exploits the critic's overestimates would learn to chase errors. The *online* critics are used here, not the target critics, since the actor should follow the best current estimate of Q. (The target critics are only for building the Bellman targets in the critic update.)
+
+**Step 4: Compute the loss and take one gradient step on the actor.**
+The gradient flows **Q → ã → (μ, σ) → actor weights**. It also flows through log π(ã|s), since log π depends on μ and σ directly and on ã through the tanh correction. α is treated as a constant.
+
+**The critics receive gradients too, but are not updated.** Backpropagation passes through the critic's layers on the way to ã, and some implementations compute gradients for their weights without using them. What matters is that only the **actor's optimizer** takes a step, so the critics' weights stay unchanged. (You can also freeze the critics during this step to save computation.)
+
+#### What the gradient does, in plain terms
+
+Suppose that for one state the actor currently outputs μ = 0.5 and σ = 0.2, and that the critic says Q rises as the action increases (a higher ã gives higher Q). Then:
+
+- The gradient of −Q with respect to μ says "raise μ." The actor shifts its mean toward the better action.
+- The entropy term works against collapse. A smaller σ makes the policy more peaked, which increases log π (a narrower density has a higher value) and so increases the loss, because α·log π is being minimized. The entropy term therefore pushes σ up. The Q term typically pushes σ down once the best action is clear. The balance between them is set by α.
+
+#### A numeric example
+
+Take α = 0.2 and one state. The actor samples ã, with log π(ã|s) = −1.0. The online critics say Q₁(s, ã) = 10.0 and Q₂(s, ã) = 9.6.
+
+- min Q = 9.6
+- loss for this state = 0.2 × (−1.0) − 9.6 = **−9.8**
+
+Now suppose the actor changes slightly and a new sample ã′ has Q₁ = 10.5, Q₂ = 10.1 and log π = −0.5:
+
+- loss = 0.2 × (−0.5) − 10.1 = **−10.2**
+
+That's lower, so it's an improvement. The actor moves toward whatever lowers that number. Even though the loss is negative, only its relative change matters. In practice both terms vary across actions, and the loss is the average over 256 states.
+
+#### The same step in code
+
+```python
+a_new, logp_new = actor.rsample(s)                    # reparameterized: gradients can flow
+q_new = torch.min(q1(s, a_new), q2(s, a_new))         # online critics, twin-min
+actor_loss = (alpha * logp_new - q_new).mean()
+
+actor_opt.zero_grad(); actor_loss.backward(); actor_opt.step()   # only the actor's optimizer steps
+```
+
+(`alpha` here is a plain number, and no `no_grad` is used, because gradients must pass through the critics.)
+
+#### Comparison with the critic update
+
+| | Critic update | Actor update |
+|---|---|---|
+| Trains | Q₁, Q₂ | Actor |
+| Actions used | The buffer's a (for predictions) and a fresh a′ at s′ (for the target) | A fresh ã at s |
+| Critics used | Target critics build the target; online critics make predictions | Online critics only |
+| Reward and done | Yes, in the target | Not used |
+| Gradient through the sampled action | No (target is a constant) | **Yes** (reparameterization) |
+| Loss type | Regression to a target | Maximize a soft value |
+
+#### Common confusions
+
+- **Why doesn't the actor learn from the buffer's actions?** The critic can learn from old actions, since Q-learning is off-policy. But the actor's job is to find the *best action now*, and it can only do that by proposing its own actions and asking the critic how good they are. States come from the buffer, actions come from the actor.
+- **Why use the updated critics?** The actor update comes right after the critic update, so it uses the freshly improved critics.
+- **Why not use the target critics here?** They lag behind, and they exist to stabilize bootstrapped targets. The actor wants the sharpest current signal.
+- **Isn't it circular, with the critic judging the actor and the actor shaping what the critic sees?** Yes, and it's the same loop as any actor-critic. The twin-min, the target networks and the entropy term are what keep it stable.
+- **Why no clipping, like PPO?** PPO had to restrict policy changes because it learns from on-policy data. SAC's actor loss is based on the critic's Q-function, which is learned from the replay buffer, so large actor changes don't corrupt the data.
+
+#### Summary for your notes
+
+2) **Part 3, Update 2: Actor**
+   1. Use the batch's states s only
+   2. Sample ã = tanh(μ + σ·ε) from the current actor (reparameterized) and compute log π(ã|s)
+   3. Score ã with both **online** critics and take the min
+   4. L_actor = mean[α·log π(ã|s) − min(Q₁, Q₂)(s, ã)]
+   5. Gradient path: Q → ã → (μ, σ) → actor weights; only the actor's optimizer steps
+   6. α is a constant here, and critic weights are unchanged
+   7. Minimizing the loss = maximizing the soft value: high Q plus high entropy
+
+Next is **the temperature update**, which adjusts α automatically so that the policy's entropy stays near the target H̄ from Part 1. It's the shortest of the four updates, and it explains where the target entropy of −(action dimensions) comes from. Shall I go ahead?
+
+## Summary 20 SAC Part 3 2/4 Actor Update
+
+3) Learning
+   2) Actor Update
+      1) Use the batch's states s only
+      2) Sample ã = tanh(μ + σ·ε) from the current actor (reparameterized) and compute log π(ã|s)
+      3) Score ã with both **online** critics and take the min
+      4) L_actor = mean[α·log π(ã|s) − min(Q₁, Q₂)(s, ã)]
+      5) Gradient path: Q → ã → (μ, σ) → actor weights; only the actor's optimizer steps
+      6) α is a constant here, and critic weights are unchanged
+      7) Minimizing the loss = maximizing the soft value: high Q plus high entropy
+   
+i think i'm going too slow
+
+suggested order
+ - [x] part 0 - concepts
+ - [x] parts 1 and 2 - set up, interaction
+ - [x] part 3 critic update
+ - [x] part 3 actor update
+ - [ ] part 3 alpha update
+ - [ ] part 3 target update
+ - [ ] part 4 practicalities
+ - [ ] check notes
+
+
+## Prompt 21 SAC Remainder
+
+Yes proceed, but for the sake of brevity and meeting the deadline, can you give a high level overview and the math behind the rest of Part 3, and with Part 4?
+
+## Response 21 SAC Remainder
+
+### Part 3, Update 3: Temperature (α)
+
+**Purpose:** set α automatically, so the policy keeps roughly a chosen level of randomness without hand-tuning.
+
+**Idea:** instead of fixing α, require the policy's average entropy to stay at least at a target H̄. α then acts as a dial that turns itself up or down:
+
+- Entropy below the target: raise α, so randomness is rewarded more.
+- Entropy above the target: lower α, so reward matters more.
+
+**Math:** the constraint is E[−log π(a|s)] ≥ H̄. Solving it with a Lagrange multiplier (which is α) gives:
+
+> **L(α) = mean over the batch of [ −α · ( log π(ã|s) + H̄ ) ]**
+
+with ã sampled from the current actor (the same ã as in the actor update), and log π treated as a **constant** here. In practice you learn **log α** so α = exp(log α) stays positive:
+
+```python
+alpha_loss = -(log_alpha * (logp_new + target_entropy).detach()).mean()
+```
+
+**Check of the direction** (H̄ = −2 for two action dimensions):
+
+| Batch mean log π | Entropy estimate (−log π) | log π + H̄ | Loss = −α·(…) | Effect on α |
+|---|---|---|---|---|
+| −1.0 | 1.0 (above target) | −3.0 | +3α | minimizing **lowers** α |
+| 3.0 | −3.0 (below target) | +1.0 | −α | minimizing **raises** α |
+
+**Target entropy:** the standard heuristic is H̄ = −(number of action dimensions). It's negative because continuous entropy can be negative (Concept 3). It's a heuristic from the paper, not a derived quantity, and it can be tuned.
+
+**Used elsewhere:** the α in the critic and actor updates is the current exp(log α), detached, so the update order matters only slightly. A simple, correct ordering is critics → actor → α.
+
+### Part 3, Update 4: Target critics
+
+After the other updates, blend each target critic toward its online critic (Concept 5):
+
+> **θ̄ᵢ ← τ·θᵢ + (1 − τ)·θ̄ᵢ**, for i = 1, 2, with τ = 0.005
+
+Only the critics have targets. The actor and α do not.
+
+#### All of Part 3 in one view
+
+| # | Update | Trains | Loss / rule |
+|---|---|---|---|
+| 1 | Critics | Q₁, Q₂ | (Qᵢ(s,a) − y)², y = r + γ(1−done)[min Q̄(s′,a′) − α·log π(a′\|s′)] |
+| 2 | Actor | π | α·log π(ã\|s) − min Q(s,ã), ã reparameterized |
+| 3 | Temperature | log α | −α·(log π(ã\|s) + H̄) |
+| 4 | Targets | Q̄₁, Q̄₂ (no gradients) | θ̄ ← τθ + (1−τ)θ̄ |
+
+The complete algorithm, in pseudocode:
+
+```
+init actor, Q1, Q2, targets = copies of Q1 and Q2, log_alpha = 0, buffer
+for each environment step:
+    a = random (during warm-up) or sample from the actor
+    store (s, a, r, s', done)
+    if past warm-up:
+        sample a batch
+        1. critic update      (soft Bellman target, twin-min)
+        2. actor update       (reparameterized, maximize soft value)
+        3. temperature update (keep entropy near H_bar)
+        4. Polyak-update the target critics
+```
+
+### Part 4: Practicalities
+
+#### 1) Typical hyperparameters
+
+| Setting | Typical value |
+|---|---|
+| Networks | 2 hidden layers × 256, ReLU |
+| Learning rate (all three optimizers) | 3·10⁻⁴ (Adam) |
+| γ | 0.99 |
+| τ | 0.005 |
+| Batch size | 256 |
+| Buffer size | 10⁶ |
+| Updates per environment step (UTD) | 1 |
+| Initial α | 1.0 (learned) |
+| Target entropy | −(action dimensions) |
+| Warm-up | random actions for the first few thousand steps (SB3 default is much smaller) |
+| Log σ clamp | about [−20, 2] |
+
+For comparison with PPO, SAC is generally less sensitive to hyperparameters. Reward scale matters more than the settings above, because α and the rewards interact (Concept 1).
+
+#### 2) Training and evaluation
+
+- **Stopping:** like PPO, there's no automatic stop. Train for a fixed budget of environment steps (10⁵ to 10⁶ is common) and watch the evaluation curve.
+- **Evaluation:** use a separate evaluation environment, run periodically, with the **deterministic action tanh(μ)**, and report the same task metrics as for your other models (collision rate, speed, time-to-exit, return). Use several seeds.
+- **Diagnostics to log** (these are health checks, not performance measures): critic loss, Q-value magnitudes (an exploding Q indicates overestimation), α, and the policy entropy. If α drifts toward 0 or grows very large, something is off, e.g. a poor target entropy or badly scaled rewards.
+
+#### 3) Variants you'll meet in papers
+
+These are the ones in your original list, plus the discrete case. Please verify the details against each paper.
+
+| Variant | Core change |
+|---|---|
+| **Discrete SAC** (Christodoulou, 2019) | For discrete actions. The actor outputs probabilities, so the expectations over a′ are exact sums, with no reparameterization. Useful if you keep the discrete meta-actions. |
+| **SAC-N** (from offline RL, An et al., 2021) | Use N critics (e.g. 10+) and take the min over them, for stronger pessimism. |
+| **REDQ** (Chen et al., 2021) | N critics plus a high update-to-data ratio (e.g. 20 updates per step); the target uses the min over a random subset of 2 critics. Much more sample-efficient. |
+| **DroQ** (Hiraoka et al., 2022) | Gets REDQ's benefit with 2 critics by adding dropout and layer normalization to the critics. |
+| **CrossQ** (Bhatt et al., 2024) | Removes the target networks and adds batch normalization to the critics, with UTD = 1. Faster and simpler. |
+| **TQC** (Kuznetsov et al., 2020) | Distributional critics; drops the highest quantiles to control overestimation. |
+| **SimBa** (Lee et al., 2025) | An architecture change (normalization plus residual blocks) that lets networks scale better. |
+
+Notice what all of these modify: the critics (more of them, better regularized or normalized), the update-to-data ratio, and the architecture. The actor loss and α tuning mostly stay the same. When you read a 2025-26 off-policy paper, ask where it sits on this list.
+
+#### Notes for your project
+
+- **Action space:** the standard SAC requires highway-env's `ContinuousAction` (acceleration and steering), so your custom environment must support it. With discrete meta-actions you'd use discrete SAC or stay with DQN and PPO.
+- **Libraries:** Stable-Baselines3 has `SAC`. SB3-Contrib and SBX provide TQC, DroQ and CrossQ.
+- **Compute:** one update per step plus four networks makes SAC slower per step than PPO, but it needs far fewer steps.
+
+#### Summary for your notes
+
+3) **Update 3 (temperature):** L(α) = mean[−α·(log π(ã|s) + H̄)], learning log α; H̄ = −(action dimensions); raises α when entropy is below target and lowers it when above
+4) **Update 4 (targets):** θ̄ ← τθ + (1−τ)θ̄ for both critics, τ = 0.005
+5) **Part 4:** defaults (256×2, 3·10⁻⁴, γ 0.99, τ 0.005, batch 256, UTD 1); fixed step budget; evaluate deterministically with tanh(μ); variants modify the critics, the UTD and the architecture, not the actor loss
+
+That completes SAC. With PPO, DQN and SAC covered, you have the foundation for the 2026 papers. Given your timeline, a sensible next step is to shortlist the five 2026 candidates, check which have public code and which action space each needs, and draft the midterm report's methods and metrics section. I can start with the shortlist.
+
+## Summary 21 SAC Remainder
+
+SAC
+1) Part 0 Concepts
+   1) Concept 1 maximum-entropy objective
+      1) Previous goal is to maximize expected sum of discounted rewards = max E[sum(gamma^t * r_t)]
+      2) SAC adds an entropy bonus = max E[sum(gamma^t * (r_t + alpha*H))]
+         1) The entropy bonus gives a bonus to policies that have multiple similar-probability actions in a particular state. The benefit is: 1) exploration from the actions staying random and 2) robustness for when several strategies are equally good
+         2) From PPO, H = -sum(pi(a|s)*log(pi(a|s))), where H is greatest when all the actions are the same probability, and least when one action is probability 1 and the rest are 0
+            1) log here means ln, always
+            2) H is also = E_{a~pi}[ -log(pi(a|s)) ], so -log(pi(a|s)) is a one-sample estimate of entropy
+         3) alpha is the temperature, low is near greedy, high is near uniform
+      3) the optimal policy pi(a|s) is proportional to exp( Q(s,a) / alpha ). Q is soft Q, and it's a softmax over actions. alpha controls the peak
+   2) Concept 2 soft-Q
+      1) Previous:
+         1) Bellman expression: Q(s,a) = r + gamma*V(s')
+         2) V(s') = max Q(s',.)
+      2) The Value must now include entropy
+         1) V(s') = E over a'~pi[Q(s',a') - alpha * log(pi(a'|s'))]
+            1) The average of Q plus alpha times entropy (entropy is -log, so subtracting log is adding the entropy)
+      3) The new Q equation is Q(s,a) = r + gamma*E[Q(s',a') - alpha\*log(pi(a'|s'))], where a' is drawn from the policy at s'. a' is random from policy, s' is random from environment (implicit)
+         1) the actor supplies a' which is why it can replace DQN's max over actions
+   3) Concept 3 - Squashed Guassian Policy
+      1) don't have probability for each action in a continuous action - they're infinite
+      2) The actor outputs μ and log σ (log stdev) per action dimension (log σ clamped (prevent from being too small/big), sigma always positive because sigma=exp(log(sigma)))
+      3) Sample u ∼ N(μ, σ²), then a = tanh(u) ∈ (−1, 1) (squash), and rescale to the environment's range
+      4) log π(a|s) = log N(u; μ, σ) − Σ log(1 − tanh²(u)). The second term is the tanh correction, because a is tanh(u)
+         1) you're summing over action dimensions, u is a vector with each entry corresponding to an action dimension
+         2) log pi(a|s) is needed to compute H, which is used in computing soft Bellman target (critic update) and actor loss
+      5) For continuous actions π is a density, so log π can be positive and entropy can be negative. 
+         1) if it were a probability its always < 1 and thus log is always negative, and entropy (-ln) positive 
+   4) Concept 4 - Reparamaterization Trick
+      1) Problem: because we're sampling a, it blocks the gradients from Q back to the actor, whivh is needed for backpropagation
+      2) Fix: u = μ + σ·ε with ε ∼ N(0,1) drawn independently of the weights, so a = tanh(u) is differentiable
+         1) epsilon is sampled independently from the weights 
+         2) same as rolling a random number and shifting the scaling/shifting based on that random number
+      3) Gradients flow Q → a → (μ, σ) → actor weights (`rsample()` in PyTorch)
+      4) It requires continuous actions and a critic that takes action a as input
+   5) Concept 5 - Polyak averaging
+      1) A smooth, lagging copy of the critic, updated every step (instead of DQN's periodic hard copy)
+      2) θ_target ← τθ + (1−τ)θ_target, τ ≈ 0.005 (take .5% of the critic, stays 99.5% the same)
+      3) Only the critics have targets
+1) Setup (once)
+   1) Actor network (pi_phi): input state s → output action distribution (if continuous) (μ, log σ) per action dimension
+      1) typically two hidden layers, 256 units ReLU
+   2) Two critic networks Q₁, Q₂ (Q_theta1, Q_theta2): input (state s, sampled action a) → scalar (Q(s,a))
+   3) two target critics (copies, updated only by Polyak averaging, not gradient descent)
+   3) log α (temperature) learnable (α = exp(log α), alpha just stored as log(alpha)), target entropy H̄ = −(num of action dimensions)
+   4) Replay buffer, Adam optimizers (3*10-4, 0.0003), γ = 0.99, τ = 0.005, batch size 256
+2) Interaction (every environment step)
+   1) Warm-up with uniformly random actions
+      1) e.g. 100-10,000 steps, fills up buffer, no gradient updates
+   2) Then sample from the actor (deterministic mean at evaluation)
+   3) Store (s, a, r, s′, done) with the squashed a and `done` = real termination only
+      1) remember a is rescaled and corrects tanh()
+   4) One update round per environment step (see Part 3))
+3) Learning
+   1) Critic Update
+      1) Sample a mini-batch of (s, a, r, s′, done) from the buffer
+      2) Sample a′ from the *current* actor at s′ and compute log π(a′|s′) (no gradient) (aka one sample estimate of entropy)
+      3) Evaluate a′ with both *target* critics and take the **minimum** (counters overestimation)
+      4) Soft value of s′ (V(s')) = min Q̄ − α·log π(a′|s′)
+         1) Q-bar refers to target
+      5) y = r + γ(1 − done)·[min Q̄(s′,a′) − α·log π(a′|s′)], y is a constant (no gradient)
+         1) y is the target
+      6) L = mean[(Q₁(s,a) − y)² + (Q₂(s,a) − y)²], using the buffer's a and the online critics
+      7) backward pass, Adam on both critics
+      8) Only the online critics' weights change in this step
+   2) Actor Update
+      1) Use the batch's states s only
+      2) Sample ã = tanh(μ + σ·ε) from the current actor (reparameterized) and compute log π(ã|s)
+      3) Score ã with both **online** critics and take the min
+      4) L_actor = mean[α·log π(ã|s) − min(Q₁, Q₂)(s, ã)]
+      5) Gradient path: Q → ã → (μ, σ) → actor weights; only the actor's optimizer steps
+      6) α is a constant here, and critic weights are unchanged
+      7) Minimizing the loss = maximizing the soft value: high Q plus high entropy
+   3) Temperature Update
+      1) set target entropy, and update alpha to remain near this entropy target
+         1) raises α when entropy is below target and lowers it when above
+      2) L(α) = mean[−α·(log π(ã|s) + H̄)], learning log α
+      3) H̄ = −(action dimensions)
+   4) Target Critic Update
+      1) Polyak average
+      2) θ̄ ← τθ + (1−τ)θ̄ for both critics, τ = 0.005
+4) Practicalities
+   1) most hyperparams already mentioned
+   2) buffer size 10^6
+   3) log sigma clamp [-20, 2]
+   4) SAC is generally less sensitive to hyper parameters
+   5) total env steps, 10^5 or 10^6
+   6) separate evaluation environment, periodically, with the deterministic action from tanh(u)
+
+
+Next I need to read papers
+
+What am I looking for while reading
+
+ - how do we implement a model with highway-env?
+ - need a better understanding of the metrics - as we read
+
+ - is there a free repo somewhere? (doesn't necessarily have to be from the authors)
+ - how does the model work overall? 
+ - what does it improve on contemporaries?
+ - what family does it fall under?
+ - what are the action spaces that it works on?
+ - from the report
+   - name
+   - authors
+   - year
+   - title
+   - performance
+   - notable strengths/weaknesses
+
+
+we don't need a repo for the report itself, we just need to exemplify that yes, we've been doing research
+
+
+## Prompt 22 Implementing in highway-env
+
+before i begin research, i do want to ask. we are depending on these newer models to have an implementation somewhere (whether its the authors, or a gracious individual who made it separate from the authors), but highway-env has specified that certain models are recommended for integrating with it (e.g. SB3). 
+
+how do we take a model with its own implementation and integrate it with highway-env? is that a straightforward process?
+
+## Response 22 Implementing in highway-env
+
+Yes, it's usually fairly straightforward, though effort varies by repo, and it's the main practical risk for your 5-models-in-6-weeks plan.
+
+### Why it's usually workable
+
+**SB3 isn't required.** Highway-env is a standard **Gymnasium** environment. Its docs use SB3 because it's convenient. Any algorithm implementation that can train on an arbitrary Gymnasium environment can train on highway-env. The environment only exposes `reset()` and `step()`, plus observation and action space definitions, so integration means making the implementation's expectations match those.
+
+### What usually goes wrong
+
+1. **Gym versus Gymnasium API.** Older repos use the pre-2022 `gym` API: `reset()` returns only obs, and `step()` returns 4 values (obs, reward, done, info). Highway-env uses Gymnasium: `reset()` returns `(obs, info)` and `step()` returns 5 values `(obs, reward, terminated, truncated, info)`. Fixes are usually a few lines, or a compatibility wrapper (e.g. Gymnasium's `shimmy` package).
+2. **Hard-coded benchmark environments.** Research repos often assume MuJoCo, DeepMind Control or Atari and hard-code environment creation, observation preprocessing or normalization. You'll need to find where the environment is created and swap in `gym.make("your-env")`.
+3. **Observation shape.** Highway-env's default `Kinematics` observation is a 2D array (vehicles × features). A policy network built for flat vectors needs `gym.wrappers.FlattenObservation`, and one built for images needs the grayscale or occupancy-grid observation types instead. Many implementations assume a flat `Box`.
+4. **Action space.** Discrete algorithms (DQN family, discrete SAC) need `DiscreteMetaAction`, and continuous ones (SAC, TD3, CrossQ) need `ContinuousAction`. Your custom environment may need to support whichever each of your five models requires, and this can constrain your choice of models.
+5. **Vectorized environments.** Some implementations expect a batch of parallel environments. Highway-env supports this through the standard Gymnasium vector wrappers, but check that the implementation's expected interface matches.
+6. **Dependency conflicts.** Framework versions (PyTorch or JAX, CUDA), Python version, and the Gymnasium version required by each repo and by highway-env can clash. Use a separate virtual environment or conda environment per model.
+7. **Missing or unreleased code.** Some papers have no public implementation, or the code is incomplete (missing configs, hyperparameters or pretrained weights). That's why checking code availability comes first.
+
+### A rough effort scale per model
+
+| Situation | Typical effort |
+|---|---|
+| Algorithm available in SB3, SB3-Contrib or SBX | Minutes to hours. Just change the config. |
+| Clean single-file repo (CleanRL style) written for Gymnasium | A few hours. Swap the environment ID and check the spaces. |
+| Authors' research repo with its own training harness | 1 to 3 days. Disentangle the environment creation, logging and config from the algorithm. |
+| Old `gym`-based or framework-specific repo | Several days, and sometimes not worth it. |
+| New method described as a modification to PPO or SAC | You may implement it yourselves as a patch to an existing implementation. This is often the cleanest option if the change is small. |
+
+### Making integration painless
+
+**Standardize on one environment interface.** Define your custom environment once with a `make_env(seed)` function that returns a Gymnasium-compliant environment, and have every model use it. SB3 includes `check_env()` to validate a Gymnasium environment (it complains if the API or spaces are wrong).
+
+**Write your own evaluation loop**, separate from every library's built-in evaluation, with a tiny interface:
+
+```python
+def evaluate(act_fn, make_env, seeds, n_episodes):
+    # act_fn(obs) -> action, for any model's trained policy
+    ...  # runs episodes, records collisions, speed, time-to-exit, return
+```
+
+Then each model only needs an adapter that exposes `act_fn`. That guarantees identical metrics across all five, which is what makes a benchmark fair. It also isolates the library-specific parts: training can happen in each repo, and evaluation happens in your code.
+
+**Put metrics in `info`.** Highway-env already reports `crashed` and `speed`. Add your own fields (merged, exited, time) in your custom environment, so that evaluation doesn't depend on any library's logging.
+
+**Standardize the training budget** (environment steps), the seeds, the reward function and the observation features across all models. A common mistake is to let each repo's defaults leak in, such as different frame stacks or reward normalization, which makes the comparison unfair.
+
+**Use thin adapters, not rewrites.** If a repo's code only needs the environment object, wrap it:
+
+```python
+env = gym.wrappers.FlattenObservation(make_env(seed))   # if the algorithm needs flat vectors
+```
+
+### Suggested process for each candidate
+
+1. **Check the code exists** and which framework, Python and Gymnasium version it targets.
+2. **Skim how the environment is created** and which action and observation spaces it supports.
+3. **Run the repo as-is** on a standard task (e.g. its own default environment), to confirm it works before you change anything.
+4. **Swap in your environment** and fix whatever breaks. If it takes more than a day or two, flag it.
+5. **Run a quick sanity test**: a short training run on your environment should show some learning signal, such as return rising above that of a random policy.
+
+If a repo fails at step 3 or 4, that's a good reason to drop the candidate. In your midterm report you can note the reason, since "no usable public implementation" is a legitimate finding.
+
+### Implications for choosing your five
+
+- **Prefer methods with code that already uses Gymnasium**, and ideally ones in SB3-Contrib or SBX.
+- **Include a mix of action spaces deliberately.** If two of your five models need discrete actions and three need continuous, you may need to maintain both versions of your environment. Make the comparison within each action space, or keep everything continuous (which simplifies things: PPO, SAC and most recent off-policy methods all work).
+- **Small modifications are good candidates.** PPO+ and ExO-PPO are PPO variants, so if their authors' code is a fork of a standard PPO implementation, integration should be easy.
+- **Budget time for the worst case.** With 5 people and about 6 weeks, assign one person per model for integration and have each document their steps, which also gives you material for your report's methods section.
+
+When you shortlist, for each paper note the repo link, the framework, the supported action space and the last commit date. I can help you build a comparison table and evaluate any particular repo if you paste its README or setup details.
+
+## Summary 22 Implementing in highway-env
+
+
+so yes, it's possible
+
+
+## Prompt 23 Action Space
+
+I apologize for this naive question, but for highway-env, are we looking for models that handle only exclusively continuous actions? or those with discrete actions or a mix of both? I feel that would filter many models.
+
+## Response 23 Action Space
+
+It's a good question. You choose the action space, and the choice determines which models you can use.
+
+### Highway-env supports both, one at a time
+=
+You pick the action type in the environment config, and every model in the benchmark then has to use it:
+
+| Action type | What the agent controls | Compatible algorithms |
+|---|---|---|
+| `DiscreteMetaAction` | A small menu: lane left, idle, lane right, faster, slower. Low-level controllers handle the actual steering and throttle. | DQN family, PPO and discrete SAC |
+| `ContinuousAction` | Acceleration and steering as real numbers (configurable: you can enable only longitudinal control, or both) | SAC, TD3, CrossQ and other continuous-control methods, and PPO |
+| `DiscreteAction` | The continuous controls cut into a grid of discrete choices (set by `actions_per_axis`) | The same algorithms as discrete meta-actions |
+
+A "mix of both" (hybrid, discrete plus continuous in one action) is possible with custom wrappers, but it's niche and not worth the added complexity here.
+
+### How this filters your candidates
+
+- **PPO and its variants** (including the 2026 PPO+ and ExO-PPO) handle both discrete and continuous actions, as long as the authors' code doesn't hard-code one. They're the flexible choice.
+- **Q-learning methods** (DQN family, distributional Q(λ), and PQN, which as I recall is a discrete-action method) are discrete only.
+- **Most recent off-policy methods** (SAC variants, CrossQ, DroQ, SimBa's SAC setups, TQC, REDQ) are developed and tested on continuous control (MuJoCo-style tasks).
+
+So most of the newest sample-efficiency work falls on the continuous side, and the distributional Q work falls on the discrete side. You can't easily include both families in one benchmark without making a decision.
+
+### Your options
+
+**A. Pick one action space for all five models (my suggestion).**
+- *Continuous* gives access to the largest set of recent methods. The risk is that merging and exiting through raw steering is a much harder learning problem. Early policies crash a lot, and training takes longer. A cheaper variant is to control only acceleration and let a built-in controller handle lane-keeping. But your task needs the exit, which would then need handling through the environment's design (e.g. route or lane assignment) instead of the agent's steering.
+- *Discrete meta-actions* make the task much easier to learn, since lane changes are built in, but you're limited to PPO-style methods and Q-learning variants. If few of your 2026 candidates work with discrete actions, this may fail the "2026 models" requirement.
+
+**B. Two tracks.** Run a discrete track and a continuous track, each with 2 to 3 models and PPO as the common baseline. It's a richer comparison, but it needs two environment configurations and more runs, which is risky with your timeline.
+
+**C. Bridge with `DiscreteAction`.** It lets continuous-style control work with discrete algorithms, and you'd get the same kind of low-level control as continuous. A coarse grid might limit performance, so check it first before relying on it.
+
+### What I'd do
+
+1. **Let the candidates decide.** List your shortlisted 2026 papers with the action space each was built for. If most are continuous, make the continuous environment your benchmark and drop discrete-only methods. If you can't find enough 2026 methods in one space, consider option B.
+2. **Test feasibility early.** Within the first few days, check that a baseline (PPO or SAC) can learn something on your custom merge-and-exit task in the chosen action space. If continuous steering turns out to be too hard to learn within your budget, it's better to learn that now than in week 4.
+3. **Keep the environment otherwise identical** across models: same rewards, observations and seeds. Document the action-space choice and why in the report, since it's a legitimate design decision.
+
+Please note that I haven't verified every detail of the `DiscreteAction` and `ContinuousAction` config options against the current highway-env documentation, so check the docs for the exact parameter names in your installed version.
+
+If you share your shortlist of candidates with their action spaces, I can help you decide between A and B.
+
+## Summary 23 Action Space
+
+
+highway-env can work with both, but we choose and all the models that we find should be in that action space
+
