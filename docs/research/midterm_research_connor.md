@@ -95,12 +95,12 @@ Questions for each model
    2) Policy Gradient (PPO)
    3) Off-Policy Actor-Critic (SAC)
    4) Other
- 5) what are the action spaces that it works on?
- 6) from the report:
-   1) name
+ 5) what are the action spaces that it works on? e.g. discrete, continuous, etc.
+ 6) others from the report:
+   1) name of model
    2) authors
    3) year
-   4) title
+   4) title of paper
    5) performance on metrics
    6) notable strengths/weaknesses
 
@@ -109,7 +109,7 @@ take each of these and evaluate based on the questions in summary 21, first find
     - [ ] PPO+, Kallel, Holgado-Alvarez, Tosatto, D'Eramo
     - [ ] ExO-PPO, Wang & Yang, arXiv 2602.09726,
     - [ ] Off-policy Distributional Q(lambda), (Tang, Rowland, Munos, Pires, Dabney), AISTATS 2026
-    - [ ] Reversal Q-learning, and (arXiv 2606.17551, June 2026)
+    - [ ] Reversal Q-learning, (arXiv 2606.17551, June 2026)
     - [ ] SimBa. (Lee et al., ICLR 2025)
 
 
