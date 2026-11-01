@@ -1,6 +1,6 @@
-PWD C:\Users\conno\Merging-Traffic\IEEE double column latex templet\IEEE-conference-template-062824
+PWD C:\Users\conno\Merging-Traffic\midterm_report_latex\template
 INPUT C:\Users\conno\AppData\Local\MiKTeX\miktex\data\le\pdftex\pdflatex.fmt
-INPUT c:\Users\conno\Merging-Traffic\IEEE double column latex templet\IEEE-conference-template-062824\IEEE-conference-template-062824.tex
+INPUT c:\Users\conno\Merging-Traffic\midterm_report_latex\template\IEEE-conference-template-062824.tex
 OUTPUT IEEE-conference-template-062824.log
 INPUT .\IEEEtran.cls
 INPUT IEEEtran.cls

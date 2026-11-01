@@ -1,6 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1793492012.0562 "c:/Users/conno/Merging-Traffic/IEEE double column latex templet/IEEE-conference-template-062824/IEEE-conference-template-062824.tex" "IEEE-conference-template-062824.pdf" "IEEE-conference-template-062824" 1793492012.63436 0
-  "C:/Users/conno/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1793491812.75241 82507 a9eef8696c92627b87e9975edea03b2a ""
+["pdflatex"] 1793538131.18603 "c:/Users/conno/Merging-Traffic/midterm_report_latex/template/IEEE-conference-template-062824.tex" "IEEE-conference-template-062824.pdf" "IEEE-conference-template-062824" 1793538131.84804 0
+  "C:/Users/conno/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map" 1793492479.57594 82507 a9eef8696c92627b87e9975edea03b2a ""
   "C:/Users/conno/AppData/Local/MiKTeX/miktex/data/le/pdftex/pdflatex.fmt" 1793491716.28928 13333488 7a6ed82daed12eb6644c423231463db7 ""
   "C:/Users/conno/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/base/8r.enc" 1458473887 4993 1194fb36dfcb11d9ae9802f2b00b60a3 ""
   "C:/Users/conno/AppData/Local/Programs/MiKTeX/fonts/tfm/adobe/courier/pcrr7t.tfm" 1136765053 960 379cc0019370a9e0208a0a3f949f847a ""
@@ -82,9 +82,9 @@
   "C:/Users/conno/AppData/Local/Programs/MiKTeX/tex/latex/psnfss/ot1pcr.fd" 1585253778 1025 cfb5a7799d4001859dd60898d37ec67c ""
   "C:/Users/conno/AppData/Local/Programs/MiKTeX/tex/latex/psnfss/ot1ptm.fd" 1585253778 1007 39eda417ef5837ce5e38661cfad2cedf ""
   "C:/Users/conno/AppData/Local/Programs/MiKTeX/tex/latex/xcolor/xcolor.sty" 1729265222 55384 b454dec21c2d9f45ec0b793f0995b992 ""
-  "IEEE-conference-template-062824.aux" 1793492012.47813 2547 7cf1c91615d5eb9ba410504115f4a82b "pdflatex"
+  "IEEE-conference-template-062824.aux" 1793538131.69366 2547 7cf1c91615d5eb9ba410504115f4a82b "pdflatex"
   "IEEEtran.cls" 1793490227.17579 288304 b67b6fc6c2abb39f9b461923f5199343 ""
-  "c:/Users/conno/Merging-Traffic/IEEE double column latex templet/IEEE-conference-template-062824/IEEE-conference-template-062824.tex" 1793492011.4886 16374 6d365c6ccd0bfca54a887effdb463a75 ""
+  "c:/Users/conno/Merging-Traffic/midterm_report_latex/template/IEEE-conference-template-062824.tex" 1793538130.47964 16374 6d365c6ccd0bfca54a887effdb463a75 ""
   "fig1.png" 1793490227.1284 13815 9af23e798dccf51edbe98938c641893e ""
   (generated)
   "IEEE-conference-template-062824.aux"

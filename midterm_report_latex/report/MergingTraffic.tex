@@ -8,6 +8,7 @@
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
+\usepackage{url}
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
@@ -24,11 +25,13 @@ slutskcp@mail.uc.edu}
 \IEEEauthorblockN{2\textsuperscript{nd} Given Name Surname}
 \IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
 \textit{name of organization (of Aff.)}\\
+\textit{name of organization (of Aff.)}\\
 City, Country \\
 email address or ORCID}
 \and
 \IEEEauthorblockN{3\textsuperscript{rd} Given Name Surname}
 \IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
+\textit{name of organization (of Aff.)}\\
 \textit{name of organization (of Aff.)}\\
 City, Country \\
 email address or ORCID}
@@ -36,17 +39,13 @@ email address or ORCID}
 \IEEEauthorblockN{4\textsuperscript{th} Given Name Surname}
 \IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
 \textit{name of organization (of Aff.)}\\
+\textit{name of organization (of Aff.)}\\
 City, Country \\
 email address or ORCID}
 \and
 \IEEEauthorblockN{5\textsuperscript{th} Given Name Surname}
 \IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
 \textit{name of organization (of Aff.)}\\
-City, Country \\
-email address or ORCID}
-\and
-\IEEEauthorblockN{6\textsuperscript{th} Given Name Surname}
-\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
 \textit{name of organization (of Aff.)}\\
 City, Country \\
 email address or ORCID}
@@ -56,46 +55,51 @@ email address or ORCID}
 
 
 \section{Background}
-Background.
-Background Background.
+\textit{In this section, provide a comprehensive overview of the problem or challenge your project
+addresses. Include the motivation behind selecting this topic, its relevance to the field, and any
+specific issues that your project seeks to resolve. Be sure to clearly define any terminology that is
+specific to your area of research. This section sets the stage for the entire report, so ensure it's clear
+and well-structured.}
+
+Our project seeks to identify a Deep Reinforcement Learning (DRL) model that is best suited to 
+equip a car to merge onto and off of a highway. We were seeking to explore a topic in the realm of 
+automated driving, and after some deliberation and exploration settled on specifically the act of merging
+onto and off of a highway. As drivers, many of us faced initial difficulty with this driving skill, so we
+thought it would be intriguing to explore how well DRL models would fair. We also considered it potentially
+challenging, such that it would be suitable for our Deep Learning class project. From our current research,
+we have yet to find anything that explores similar questions or tasks (TEAM NOTE: MAYBE WE SHOULD DO A LITTLE 
+MORE RESEARCH TO FIND IF THERE ARE ANY EXISTING PAPERS ON MERGING??????).
+
+Our tool to simulate the highway environment will be the ``highway-env'' python package. This package is a 
+modification of the popular ``gymnasium'' python package that contains tools for building environments suitable
+for DRL or RL model training. ``highway-env'' contains many pre-designed driving environments (straight highway, 
+racetrack, parking, etc.), and ours will be a modification of the ``merge-v1'' environment. 
+
+Example of citation \cite{b1}
+
+
+example of ellipses $\ldots$
+
 
 \section{Related Studies}
-Related Studies.
+\textit{This section should demonstrate a thorough understanding of the existing work in your field. You
+are required to review at least five state-of-the-art models that are closely related to your project.
+For each paper, include the following: Model Name and Authors: Cite the paper and mention the
+model's creators. Methodology: Summarize the key techniques or algorithms used in the model.
+Focus on how these models approach the problem at hand. Performance: Provide a comparison of
+each model's performance based on standard benchmarks (e.g., accuracy, precision, recall, etc.)
+and briefly mention any notable strengths or weaknesses. The discussion should not only
+summarize but also critically analyze how these existing models have informed your own project.
+Highlight how your approach builds upon or deviates from these studies}
 
-
-\section*{References}
-
-Please number citations consecutively within brackets \cite{b1}. The 
-sentence punctuation follows the bracket \cite{b2}. Refer simply to the reference 
-number, as in \cite{b3}---do not use ``Ref. \cite{b3}'' or ``reference \cite{b3}'' except at 
-the beginning of a sentence: ``Reference \cite{b3} was the first $\ldots$''
-
-Number footnotes separately in superscripts. Place the actual footnote at 
-the bottom of the column in which it was cited. Do not put footnotes in the 
-abstract or reference list. Use letters for table footnotes.
-
-Unless there are six authors or more give all authors' names; do not use 
-``et al.''. Papers that have not been published, even if they have been 
-submitted for publication, should be cited as ``unpublished'' \cite{b4}. Papers 
-that have been accepted for publication should be cited as ``in press'' \cite{b5}. 
-Capitalize only the first word in a paper title, except for proper nouns and 
-element symbols.
-
-For papers published in translation journals, please give the English 
-citation first, followed by the original foreign-language citation \cite{b6}.
+TODO: DOUBLE CHECK IEEE CITATION FORMAT
 
 \begin{thebibliography}{00}
-\bibitem{b1} G. Eason, B. Noble, and I. N. Sneddon, ``On certain integrals of Lipschitz-Hankel type involving products of Bessel functions,'' Phil. Trans. Roy. Soc. London, vol. A247, pp. 529--551, April 1955.
-\bibitem{b2} J. Clerk Maxwell, A Treatise on Electricity and Magnetism, 3rd ed., vol. 2. Oxford: Clarendon, 1892, pp.68--73.
-\bibitem{b3} I. S. Jacobs and C. P. Bean, ``Fine particles, thin films and exchange anisotropy,'' in Magnetism, vol. III, G. T. Rado and H. Suhl, Eds. New York: Academic, 1963, pp. 271--350.
-\bibitem{b4} K. Elissa, ``Title of paper if known,'' unpublished.
-\bibitem{b5} R. Nicole, ``Title of paper with only first word capitalized,'' J. Name Stand. Abbrev., in press.
-\bibitem{b6} Y. Yorozu, M. Hirano, K. Oka, and Y. Tagawa, ``Electron spectroscopy studies on magneto-optical media and plastic substrate interface,'' IEEE Transl. J. Magn. Japan, vol. 2, pp. 740--741, August 1987 [Digests 9th Annual Conf. Magnetics Japan, p. 301, 1982].
-\bibitem{b7} M. Young, The Technical Writer's Handbook. Mill Valley, CA: University Science, 1989.
-\bibitem{b8} D. P. Kingma and M. Welling, ``Auto-encoding variational Bayes,'' 2013, arXiv:1312.6114. [Online]. Available: https://arxiv.org/abs/1312.6114
-\bibitem{b9} S. Liu, ``Wi-Fi Energy Detection Testbed (12MTC),'' 2023, gitHub repository. [Online]. Available: https://github.com/liustone99/Wi-Fi-Energy-Detection-Testbed-12MTC
-\bibitem{b10} ``Treatment episode data set: discharges (TEDS-D): concatenated, 2006 to 2009.'' U.S. Department of Health and Human Services, Substance Abuse and Mental Health Services Administration, Office of Applied Studies, August, 2013, DOI:10.3886/ICPSR30122.v2
-\bibitem{b11} K. Eves and J. Valasek, ``Adaptive control for singularly perturbed systems examples,'' Code Ocean, Aug. 2023. [Online]. Available: https://codeocean.com/capsule/4989235/tree
+\bibitem{b1} M. Kallel, J. Holgado-Alvarez, S. Tosatto, and C. D'Eramo, ``PPO+: Enhancing proximal policy optimization,'' Reinforcement Learning Journal, 2026. [Online]. Available: \url{https://rlj.cs.umass.edu/2026/papers/Paper8.pdf}
+\bibitem{b2} H. Wang and M. Yang, ``ExO-PPO: an Extended Off-policy Proximal Policy Optimization Algorithm,'' School of Aeronautics and Astronautics Organization, Feb. 2026, arXiv:2602.09726. [Online]. Available: \url{https://arxiv.org/pdf/2602.09726}
+\bibitem{b3} Y. Tang, M. Rowland, R. Munos, B. Avila Pires, and W. Dabney, ``Off-policy Distributional Q($\lambda$): Distributional RL Without Importance Sampling,'' 29th International Conference of AISTATS, vol. 300, 2026. [Online]. Available: \url{https://raw.githubusercontent.com/mlresearch/v300/main/assets/tang26a/tang26a.pdf}
+\bibitem{b4} A. Oberai, S. Park, S. Levine, ``Reversal Q-Learning,'' University of California, Berkeley, June 2026, arXiv:2606.17551. [Online]. Availalbe: \url{https://arxiv.org/pdf/2606.17551}
+\bibitem{b5} H. Lee, et al. ``SIMBA: SIMPLICITY BIAS FOR SCALING UP PARAMETERS IN DEEP REINFORCEMENT LEARNING,'' ICLR, 2025, arXiv:2410.09754. [Online]. Available: \url{https://arxiv.org/pdf/2410.09754}
 \end{thebibliography}
 
 \end{document}
