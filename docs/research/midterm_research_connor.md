@@ -61,7 +61,38 @@ new TDL
 
 ## 5 PPO+: Enhancing proximal policy optimization
  - https://rlj.cs.umass.edu/2026/papers/Paper8.pdf
- - https://github.com/kallel-mahdi/PPO-Plus 
+ 1) is there a free repo somewhere? (doesn't necessarily have to be from the authors)
+    - https://github.com/kallel-mahdi/PPO-Plus 
+ 2) how does the model work overall? 
+    - major changes:
+       1) off-policy critic training, maintain on-policy actor updates - improve critic accuracy and gradient estimation
+       2) bounded action policies - coherence and stability
+       3) entropy regularization - exploration and robustness
+ 3) what does it improve on contemporaries?
+    - contemporaries being classic PPO
+    - overcome performance sensitivity, implementation complexity, critic accuracy, and action constraints 
+ 4) what family does it fall under? 
+    - Policy Gradient (PPO)
+    - with heavy inspiration from off-policy counter-parts 
+ 5) what are the action spaces that it works on? e.g. discrete, continuous, etc.
+    - both, i think
+    - trained on MuJoCo, which is purely continuous action spaces, but the on-policy family can handle both (since pi(a|s) can be discrete for discrete and the distribution for continuous)
+ 6) others from the report:
+    1) name of model
+       - PPO+
+    2) authors
+       - Mahdi Kallel, Jose-Luis Holgado-Alvarez, Samuele Tosatto, Carlo D’Eramo
+    3) year
+       - 2026
+    4) title of paper 
+       - PPO+: Enhancing proximal policy optimization
+    5) performance on metrics 
+       - outperforms all (PPO, PPO similar arch to PPO+, SAC, TRPO) on policy return in DOG env in Deepmind Control Suite, usually 2nd best in MuJoCo (behind SAC), loses to PPO on Walker2d-v5
+    6) notable strengths/weaknesses
+       - strengths
+          - PPO + overcoming limitations
+       - weaknesses
+          - sample efficiency (compared to off policy), assumes markov state observations (what is that)
 
 ## 6 ExO-PPO: an Extended Off-policy Proximal Policy Optimization Algorithm
  - https://arxiv.org/pdf/2602.09726
@@ -151,7 +182,7 @@ Follow-up questions for DQN:
     1) The first phase consits of two steps: step 1 collect a batch e.g. 2048 steps with the current policy  
        1) The first policy initializes the likelihood of all actions to the same probability
        2) A step is one transition: you're in state s, you take action a, you get a reward r
-       3) Collect state s, action a, reward r, the done flag, log(pi_old(a|s)) for the ratio, and the critics estimate for that sample V(s) for advantages
+       3) Collect state s, action a, reward r, the done flag, log(pi_old(a|s)) for the ratio, and the critics estimate for that sample's V(s) for advantages
        4) This collection is often over many environments, e.g. 8 environmnts * 256 steps = 2048
     2) The second step, compute the advantage A, which is how good the action was compared to what was expected, across each step. 
        1) To compute A, you need a critic and GAE, it's used to compute the loss where > 0 pushes the probability up, < 0 pushes the probability down, and |A| determines how much
