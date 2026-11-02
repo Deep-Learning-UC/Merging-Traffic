@@ -1,3 +1,4 @@
+# live view of training: one road panel per model plus progress charts
 import argparse
 import pickle
 import re
@@ -15,13 +16,13 @@ LOG = Path(__file__).resolve().parent / v.TRAIN["folder"] / "training_log.txt"
 PW, PH, CHART_H, FPS = 1000, 220, 240, 60
 KEY_H = 30
 PX_PER_M = 4.5
-BUFFER = 40  # playback speeds up when more than this is waiting and slows down when less. keeps it smooth
+BUFFER = 40  # target queued frames, playback speed adapts around it
 GREY, WHITE = (100, 100, 100), (255, 255, 255)
 COLORS = [(90, 170, 255), (240, 110, 200), (80, 210, 120), (240, 190, 60)]
 TIME_LEFT = re.compile(r"(\w+):\s+(\d+)/\d+ steps .*?([\d.]+) min left")
 
 
-# newest training steps and time left per model, from the training log
+# {model: (steps, min left)} from the training log
 def read_log():
     latest = {}
     if LOG.exists():
@@ -30,18 +31,16 @@ def read_log():
     return latest
 
 
-# one chart: a filled line for a % of the last 100 lives, plus connected dots counting up a running total.
-# used twice, once for exits and once for everything that went wrong. it moves every time a life ends
+# filled line = % of last 100 lives, dots = second series on the right axis
 def draw_chart(font, big, title, names, panels, pct_key, dots_key, unit, legend, goal=None):
     chart = pygame.Surface((PW, CHART_H))
     chart.fill(PANEL)
-    # fills go on their own see-through layer so they blend instead of stacking up into a solid block
+    # separate alpha layer so fills blend
     fills = pygame.Surface((PW, CHART_H), pygame.SRCALPHA)
     left, top, right, bottom = 60, 60, PW - 110, CHART_H - 30
     most = max([len(p[pct_key]) for p in panels] + [100])
     to_xy = lambda life, pct: (left + (right - left) * life / most, bottom - (bottom - top) * pct / 100)
     chart.blit(big.render(title, True, TEXT), (left, 10))
-    # dots get their own scale on the right: a running count of exits, or an average life score
     values = [n for p in panels for _, n in p[dots_key]]
     lo, hi = (min(values + [0]), max(values + [0])) if unit == "score" else (0, max(values + [10]))
     hi = hi if hi > lo else lo + 1
@@ -68,13 +67,13 @@ def draw_chart(font, big, title, names, panels, pct_key, dots_key, unit, legend,
             pygame.draw.lines(chart, color, False, points, 3)
             pygame.draw.circle(chart, color, points[-1], 5)
             chart.blit(font.render(f"{now:.0f}%", True, color), (points[-1][0] + 8, points[-1][1] - 8))
-    # second pass so the dots always sit on top of every fill
+    # dots last so they sit on top
     for k, panel in enumerate(panels):
         color = COLORS[k % len(COLORS)]
         dots = [(to_xy(life, 0)[0], to_count_y(n)) for life, n in panel[dots_key]]
         if len(dots) > 1:
             pygame.draw.lines(chart, color, False, dots, 2)
-        # at most ~60 dots drawn, spread evenly, so they never smear into a solid band
+        # draw at most ~60 dots
         for dot in dots[::max(1, len(dots) // 60)] + dots[-1:]:
             pygame.draw.circle(chart, PANEL, dot, 5)
             pygame.draw.circle(chart, color, dot, 3)
@@ -84,11 +83,11 @@ def draw_chart(font, big, title, names, panels, pct_key, dots_key, unit, legend,
     return chart
 
 
-# road, cars, and one small label. cars slide between the two physics frames they're between, thats the smoothness
+# cars are interpolated between physics frames
 def draw_panel(surface, panel, name, fonts):
     big, small = fonts
     surface.fill(GREY)
-    # keeps drawing the last life until the next one has its first frame, so the road never blinks out
+    # keep the last life until the next has a frame, so the road doesnt blink
     life = panel["drawn"]
     if life is None or panel["now"] is None:
         surface.blit(big.render(f"{name}: waiting for train.py...", True, TEXT), (20, 20))
@@ -134,7 +133,6 @@ def draw_panel(surface, panel, name, fonts):
         surface.blit(text, text.get_rect(center=box.center))
 
 
-# color key across the very top: you, every npc personality from variables.py, and wrecks
 def draw_key(font):
     key = pygame.Surface((PW, KEY_H))
     key.fill(PANEL)
@@ -147,7 +145,7 @@ def draw_key(font):
     return key
 
 
-# sorts one packet from training: a new life starting, a frame of one, or one ending
+# handles one packet: road (new life), cars (frame), or end
 def receive(panel, msg):
     rank, kind, *data = msg
     if kind == "road":
@@ -162,17 +160,16 @@ def receive(panel, msg):
             n = len(panel["last100"])
             panel["history"].append(100 * panel["last100"].count("made exit") / n)
             panel["crash_history"].append(100 * panel["last100"].count("crashed") / n)
-            # average score of every 25 lives becomes one dot on the bottom chart
+            # one score dot per 25 lives
             panel["batch"].append(data[1])
             if len(panel["batch"]) == 25:
                 panel["scores"].append((panel["lives"], sum(panel["batch"]) / 25))
                 panel["batch"].clear()
-            # every exit adds a dot to the success count
             if data[0] == "made exit":
                 panel["records"].append((panel["lives"], len(panel["records"]) + 1))
 
 
-# moves playback forward. when the life being watched ends, jump to the newest life still going
+# advances playback, jumps to the newest life when one ends
 def advance(panel):
     panel["banner"] -= 1
     life = panel["playing"]

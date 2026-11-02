@@ -1,34 +1,33 @@
 YOU = {
-    "personality": "normal",  # "random" or a personality name like "slow"
-    "driver": "model",  # "dummydriver" (Driver rules in environment.py) or "model" (MODEL below)
+    "personality": "normal",  # "random" or a PERSONALITIES name
+    "driver": "model",  # "dummydriver" or "model"
     "start_speed": 22,  # m/s
-    "model_speeds": [0, 5, 10, 15, 20, 25, 30, 35],  # m/s the model can pick between with faster/slower. 0 lets it stop and wait
-    "cars_seen": 8,  # how many nearby cars the model sees, in front and behind
+    "model_speeds": [0, 5, 10, 15, 20, 25, 30, 35],  # m/s, 0 lets it stop and wait
+    "cars_seen": 8,
 }
 
-# every driver starts with these. this is basically the normal driver
 DEFAULT_DRIVER = {
-    "chance": 0.7,  # how often this personality spawns, compared to the others. higher = more of them on the road
-    "speed": 1.05,  # speed it wants, as a fraction of the speed limit. 1.0 = right at the limit, higher = faster
-    "follows_limit": 0.4,  # chance it never goes over the limit. 1 = always obeys, 0 = always speeds if it wants to
-    "speed_wiggle": 2,  # random +/- m/s added per car. higher = cars of the same personality vary more
-    "follow_time": 1.5,  # seconds of gap kept behind the car ahead at speed. lower = tailgates, higher = big gaps
-    "stop_gap": 3,  # bumper gap in meters when stopped. lower = packs in tighter, too low and it cant steer out
-    "accel": 3.0,  # how quickly it speeds up (m/s^2). higher = jumps off the line and closes gaps fast
-    "brake": 8.0,  # hardest it can brake (m/s^2). lower = needs more room to stop, more rear ends
-    "politeness": 0.2,  # 0 to 1. how much it cares about slowing others when changing lanes. higher = lets people in
-    "lane_change_eagerness": 0.2,  # speed gain needed before it changes lanes. lower = changes lanes constantly
-    "sight": 120,  # meters it can see ahead when stopped. lower = notices stopped cars and wrecks later
-    "sight_speed_loss": 0.25,  # share of sight lost at the speed limit. higher = sees way less when going fast
-    "dodge": True,  # True = also goes around much slower cars, not just stopped ones. False = just brakes behind them
-    "keep_right": False,  # True = moves back right whenever it can. keeps the left lane open for faster cars
-    "hurry": 0.3,  # 0 to 1. higher = up to 20% faster, follows up to 2x closer, changes lanes for less reason
-    "exit_priority": 0.3,  # 0 to 1. how small a gap it takes to make the exit. higher = makes more exits but crashes more
-    "plan_ahead": 350,  # meters before the exit it starts moving over. lower = leaves it late, misses more exits
-    "color": (100, 200, 255),  # color in the video
+    "chance": 0.7,  # spawn weight vs other personalities
+    "speed": 1.05,  # fraction of speed limit
+    "follows_limit": 0.4,  # chance it never speeds
+    "speed_wiggle": 2,  # random +/- m/s per car
+    "follow_time": 1.5,  # s
+    "stop_gap": 3,  # m, too low and it cant steer out
+    "accel": 3.0,  # m/s^2
+    "brake": 8.0,  # m/s^2
+    "politeness": 0.2,  # 0 to 1
+    "lane_change_eagerness": 0.2,  # speed gain needed to change lanes
+    "sight": 120,  # m, when stopped
+    "sight_speed_loss": 0.25,  # share of sight lost at the speed limit
+    "dodge": True,  # also passes slow cars, not just stopped ones
+    "keep_right": False,
+    "hurry": 0.3,  # 0 to 1, up to 20% faster and 2x closer
+    "exit_priority": 0.3,  # 0 to 1, smaller gaps taken for the exit
+    "plan_ahead": 350,  # m before the exit it starts moving over
+    "color": (100, 200, 255),
 }
 
-# each personality only lists what it changes from DEFAULT_DRIVER
+# only overrides of DEFAULT_DRIVER
 PERSONALITIES = {
     "normal": {},
     "slow": {
@@ -85,86 +84,84 @@ PERSONALITIES = {
 }
 
 LANES = {
-    "speed_limit": 29,  # m/s, about 65 mph
+    "speed_limit": 29,  # m/s, ~65 mph
     "left_lane_bonus": 5,  # m/s
-    "right_lane_bonus": -3,  # m/s, negative = slower. middle lanes blend between
+    "right_lane_bonus": -3,  # m/s
     "ramp_and_exit_speed": 22,  # m/s
 }
 
 TRAFFIC = {
-    "density": (8, 20),  # (min, max) cars per km per lane, random each episode. kept steady around you the whole drive
-    "around_you": (120, 220),  # m behind and ahead of you where traffic is kept. cars further away either way get removed
-    "exit_chance": 0.3,  # share of traffic that also takes the exit
+    "density": (8, 20),  # cars per km per lane
+    "around_you": (120, 220),  # m behind, ahead. cars outside get removed
+    "exit_chance": 0.3,
     "spawn_spacing": 20,  # m
-    "spawn_speed": 22,  # m/s, same for everyone so nobody rear ends at spawn
+    "spawn_speed": 22,  # m/s, same for all so nobody rear ends at spawn
 }
 
 ROAD = {
     "exit_side": "random",  # "random", "left", or "right"
-    "lanes": (3, 3),  # (min, max)
-    "ramp_length": (120, 230),  # (min, max) m
-    "exit_distance": (250, 500),  # (min, max) m
-    "exit_lane_length": (80, 120),  # (min, max) m
-    "exit_ramp_length": 80,  # m. halfway up counts as made exit
+    "lanes": (3, 3),
+    "ramp_length": (120, 230),  # m
+    "exit_distance": (250, 500),  # m
+    "exit_lane_length": (80, 120),  # m
+    "exit_ramp_length": 80,  # m, halfway counts as made exit
 }
 
 REWARDS = {
-    "crash": -5,
-    "made_exit": 3,
-    "missed_exit": -1,
-    "caused_crash": -3,  # for every other car that wrecks within 30 m of you
-    "good_speed": (18, 32),  # m/s. about 40 to 72 mph
-    "speed": 0.2,  # per second while inside good_speed
-    "off_speed": -0.03,  # per second for every m/s too slow or too fast. too slow is free if something is right in front of you
-    "lane_change": -0.05,  # per lane change
-    "on_ramp": -0.01,  # times seconds spent on the on ramp, every second. grows the longer you stay so it merges instead of hitting the end
-    "progress": 0.005,  # per meter driven toward the exit. a learning hint so it knows its getting closer
-    "wrong_lane": -0.05,  # per second for each lane you are away from the exit lane, once the exit is close
-    "wrong_lane_within": 400,  # m before the exit where wrong_lane starts counting
-    "stopped_ok_within": 25,  # m. if a car or the ramp block is this close in front, going slow is free. waiting your turn is fine
-    "per_second": -0.02,  # every second costs a bit so parking is bad. a full timeout (-2.4) still has to cost less than a crash
+    "crash": -12,  # must beat the worst honest try or it gives up on the ramp
+    "made_exit": 8,  # must beat cruising past or PPO/A2C never change lanes
+    "missed_exit": -4,  # must stay above crash
+    "caused_crash": -3,  # per car that wrecks within 30 m
+    "good_speed": (18, 32),  # m/s
+    "speed": 0.2,  # per s inside good_speed
+    "off_speed": -0.03,  # per s per m/s outside good_speed
+    "lane_change": -0.05,
+    "on_ramp": -0.01,  # times seconds on the ramp, per s
+    "progress": 0.005,  # per m toward the exit
+    "toward_exit_lane": 0.5,  # per lane, negative when moving away
+    "stopped_ok_within": 25,  # m, slow is free if blocked this close
+    "per_second": -0.02,  # full timeout must cost less than a crash
 }
 
 VIDEO = {
-    "episodes": 3,  # videos per run
+    "episodes": 3,
     "fps": 15,  # also physics steps per second
-    "speed_up": 2,  # 2 = plays twice as fast
+    "speed_up": 2,
     "end_card_seconds": 1,
-    "show_window": True,  # False = just save the videos
-    "give_up_seconds": 60,  # s. auto skips stuck episodes when theres no window
+    "show_window": True,
+    "give_up_seconds": 60,  # skips stuck episodes when no window
     "you_color": (50, 200, 0),
 }
 
 MODEL = {
-    "name": "DQN",  # "DQN", "PPO", "A2C", etc. also shown on the video
-    "library": "stable_baselines3",  # "sb3_contrib" for the extra ones
-    "path": "trained/DQN.zip",  # relative to this folder. main.py --model NAME overrides name and path
+    "name": "DQN",
+    "library": "stable_baselines3",  # or "sb3_contrib"
+    "path": "trained/DQN.zip",  # main.py --model NAME overrides
 }
 
 TRAIN = {
-    "show_ui": False,  # only used when train.py cant ask you (like a server). True = open the watcher, False = no window, fastest
-    "models": ["DQN", "PPO", "A2C"],  # train.py trains these at the same time, evaluate.py scores them
-    "max_steps": 300_000,  # per model. training stops here even if it never hits the goal
-    "goal_exit_rate": 0.9,  # stops early once this share of the last 100 lives made the exit
-    "envs": 5,  # copies of the road each model trains on at once. more = faster but more cpu cores
-    "gamma": 0.95,  # how much future reward counts. the exit is ~40 steps out, too low and it never learns to care
+    "show_ui": False,  # only used when train.py cant prompt
+    "models": ["DQN", "PPO", "A2C"],
+    "max_steps": 300_000,  # per model
+    "goal_exit_rate": 0.9,  # stop early at this exit rate over last 100 lives
+    "envs": 5,  # parallel envs per model
+    "gamma": 0.99,  # lower makes the exit too far away to matter
     "seed": 0,
-    "max_life_seconds": 120,  # training only. a model that parks gets cut off here as "timed out". tests have no limit
-    "physics_per_second": 5,  # physics steps per simulated second. 5 trains ~3x faster than 15, videos still use VIDEO fps
-    "watch_port": 47800,  # watch.py listens here for the live training lives, one port per model after this
-    "folder": "trained",  # where train.py saves models, relative to this folder
-    "checkpoint_every": 1000,  # steps between saves while training, watch.py shows the newest one
-    "eval_episodes": 30,  # episodes per model in evaluate.py. every model gets the same roads
-    "settings": {  # extra settings per model, passed straight to stable baselines
+    "max_life_seconds": 120,  # training only
+    "physics_per_second": 5,  # training only, ~3x faster than 15
+    "watch_port": 47800,  # one port per model after this
+    "folder": "trained",
+    "checkpoint_every": 1000,  # steps
+    "eval_episodes": 30,
+    "settings": {  # passed to stable baselines
         "DQN": {"learning_rate": 5e-4, "buffer_size": 50_000, "learning_starts": 1000, "batch_size": 64,
                 "target_update_interval": 500, "exploration_fraction": 0.3},
-        "PPO": {"learning_rate": 3e-4, "n_steps": 256, "batch_size": 64},
-        "A2C": {"learning_rate": 3e-4, "n_steps": 16, "ent_coef": 0.01},  # ent_coef keeps it exploring. without it A2C locked into crashing
+        "PPO": {"learning_rate": 3e-4, "n_steps": 1024, "batch_size": 64, "ent_coef": 0.01},  # ent_coef: else never changes lanes
+        "A2C": {"learning_rate": 3e-4, "n_steps": 64, "ent_coef": 0.01},  # ent_coef: else locks into crashing
     },
 }
 
-# fills in every personality with the defaults for anything it didnt change.
-# also catches typos, a misspelled name would just get ignored otherwise
+# fill in defaults and catch typos in personality keys
 for _name, _changes in PERSONALITIES.items():
     _typos = set(_changes) - set(DEFAULT_DRIVER)
     assert not _typos, f"{_name} has variables that dont exist: {_typos}"

@@ -1,6 +1,5 @@
-# trains every model in TRAIN["models"] at the same time, saves checkpoints to TRAIN["folder"],
-# and stops a model early once it makes the exit TRAIN["goal_exit_rate"] of its last 100 lives.
-# asks if you want the live watcher. --ui / --no-ui skip the question, servers with no keyboard use TRAIN["show_ui"]
+# trains TRAIN["models"] in parallel, stops each early at goal_exit_rate.
+# --ui / --no-ui skip the watcher prompt
 import argparse
 import importlib
 import os
@@ -25,16 +24,14 @@ HERE = Path(__file__).resolve().parent
 LOG = HERE / v.TRAIN["folder"] / "training_log.txt"
 
 
-# prints and also writes to the log file, so a server run keeps a record and watch.py can read it
+# print and log, watch.py reads the log
 def say(text):
     print(text, flush=True)
     with open(LOG, "a") as f:
         f.write(text + "\n")
 
 
-# streams every road copy's lives to watch.py as tiny udp packets: the road when a life starts, car positions every
-# physics frame, and how it ended. each packet says which copy it came from.
-# if watch.py isnt open the packets just go nowhere, so training doesnt care either way
+# streams road, car frames, and endings to watch.py over udp. harmless if nothing is listening
 class Broadcast(gym.Wrapper):
     def __init__(self, env, port, rank):
         super().__init__(env)
@@ -70,15 +67,14 @@ class Broadcast(gym.Wrapper):
         return result
 
 
-# each road copy runs in its own process, so YOU has to be set in there too or it would be dummydriver.
-# without the ui there is nothing to stream to, so skip it and save the work
+# runs in a subprocess, so YOU has to be set here too
 def training_env(rank, port, stream):
     v.YOU["driver"] = "model"
     env = make_env(max_seconds=v.TRAIN["max_life_seconds"])
     return Broadcast(env, port, rank) if stream else env
 
 
-# prints every 1000 steps and saves checkpoints. exits/crashes are out of the last 100 lives, exits going up = learning
+# logs every 1000 steps, saves checkpoints, stops at the goal. rates are over the last 100 lives
 class Progress(BaseCallback):
     def __init__(self, name, total):
         super().__init__()
@@ -125,7 +121,6 @@ def train(name, port, steps, stream):
     say(f"{name:>4}: done, saved {out}.zip")
 
 
-# main.py calls this. argv is the extra command line options, like ["--no-ui"]
 def run(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--models", nargs="+", default=v.TRAIN["models"])
@@ -141,12 +136,12 @@ def run(argv=None):
     LOG.write_text("")
     if args.ui:
         subprocess.Popen([sys.executable, str(HERE / "watch.py"), "--models", *args.models])
-        # slightly lower priority so the watcher stays smooth. windows doesnt have os.nice, so it just skips this there
+        # lower priority so the watcher stays smooth. no os.nice on windows
         if hasattr(os, "nice"):
             os.nice(5)
     else:
         say("training without the ui. progress goes here and to " + str(LOG))
-    # port follows the order in TRAIN["models"] so a model trained alone still shows up in its own watch.py panel
+    # port by TRAIN["models"] order so each model keeps its watch.py panel
     port = lambda name: v.TRAIN["watch_port"] + (v.TRAIN["models"].index(name) if name in v.TRAIN["models"] else len(v.TRAIN["models"]))
     jobs = [Process(target=train, args=(name, port(name), args.steps, args.ui)) for name in args.models]
     for job in jobs:

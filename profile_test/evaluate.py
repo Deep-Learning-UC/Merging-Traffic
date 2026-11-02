@@ -1,4 +1,4 @@
-# scores every trained model plus the dummydriver baseline on the same unseen roads, writes results.md
+# scores each model and the dummydriver on the same unseen roads, writes results.md
 from collections import Counter
 from pathlib import Path
 
@@ -7,7 +7,7 @@ from environment import make_env
 from main import ask_model, load_model, play
 
 HERE = Path(__file__).resolve().parent
-# training used seeds near TRAIN["seed"]. these are far away so nobody gets tested on a road it trained on
+# far from TRAIN["seed"] so no model is tested on a training road
 FIRST_SEED = 10_000
 
 

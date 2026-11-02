@@ -1,6 +1,5 @@
-# start here. python main.py asks if you want to train or make videos, or say it: python main.py train / python main.py videos.
-# anything after that gets passed along, like python main.py train --no-ui or python main.py videos --model PPO.
-# also holds the helpers the other files share: colors, the color key, loading/asking a model, and playing one life
+# entry point: python main.py [train|videos] [options], e.g. videos --model PPO
+# also holds shared helpers
 import importlib
 import sys
 from pathlib import Path
@@ -11,22 +10,20 @@ from variables import MODEL, PERSONALITIES, VIDEO
 from environment import WRECK_COLOR
 
 HERE = Path(__file__).resolve().parent
-# shared look, watch.py uses these too
 PANEL, TEXT, DIM, BLUE = (18, 22, 30), (235, 238, 245), (150, 158, 172), (90, 170, 255)
 ENDING_COLORS = {"crashed": (240, 80, 80), "made exit": (80, 210, 120), "missed exit": (240, 190, 60), "timed out": DIM, "skipped": DIM}
 ENDINGS = {"skipped": "SKIPPED", "crashed": "CRASHED", "made exit": "MADE THE EXIT", "missed exit": "MISSED THE EXIT"}
-# tests and evaluate.py give up on a life here. a total pileup can block every lane forever
+# a pileup can block every lane forever, so lives give up here
 MAX_STEPS = 300
 
 
 
-# color key: you, every personality from variables.py, and wrecks. the videos and watch.py both draw this
+# color key for videos and watch.py
 def key_items():
     return [("you", VIDEO["you_color"])] + [(k, p["color"]) for k, p in PERSONALITIES.items()] + [("wreck", WRECK_COLOR)]
 
 
-# drives one life from obs until it ends or hits MAX_STEPS. choose(obs) picks the action, each_step(env) runs after every step.
-# returns how it ended ("stuck" if it never did), the steps, and the total reward
+# returns (outcome or "stuck", steps, total reward)
 def play(env, obs, choose, each_step=None):
     done, steps, total = False, 0, 0.0
     while not done and steps < MAX_STEPS:
@@ -36,8 +33,7 @@ def play(env, obs, choose, each_step=None):
             each_step(env)
     return env.outcome() or "stuck", steps, total
 
-# MODEL["name"] is looked up in MODEL["library"], so new models need no code changes.
-# a model trained on a different input (like connors old one) gets skipped instead of crashing
+# returns None if it cant load or was trained on a different obs shape
 def load_model(env):
     try:
         algo = getattr(importlib.import_module(MODEL["library"]), MODEL["name"])
@@ -50,7 +46,7 @@ def load_model(env):
         return None
     return model
 
-# DQN-style models expose q values, PPO-style expose action probabilities
+# returns (action, scores, kind). q values for DQN, probabilities for PPO style
 def ask_model(model, obs):
     if model is None:
         return 1, None, ""
@@ -65,7 +61,7 @@ def ask_model(model, obs):
     return int(np.argmax(scores)), scores, kind
 
 
-# train or make videos. the import happens here so the other files can still import the helpers above
+# imports inside so other files can import main without loading train/videos
 def menu():
     args = sys.argv[1:]
     choice = args.pop(0) if args and args[0] in ("train", "videos") else None

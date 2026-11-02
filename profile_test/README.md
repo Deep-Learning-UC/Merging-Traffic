@@ -60,7 +60,7 @@ the log is `trained/training_log.txt`
 - the model sees 8 cars around it (front and behind), the ramp block, the exit side, and how far the exit is. highway-env's default only saw 5 cars in front.
 - the model can pick 0 to 35 m/s (`YOU["model_speeds"]`). highway-env's default was only 20/25/30 so slower did nothing.
 - training runs physics at 5 steps per second (~3x faster than 15). training lives get cut at 120s so a parked model cant stall it.
-- rewards: crash -5 is the worst, exit +3. small costs for time, sitting still, and lane changes. a full timeout still costs less than a crash.
+- rewards: crash -12 is the worst, exit +8, missing it -4. small costs for time, sitting still, and lane changes, and +0.5 for each lane moved toward the exit lane (-0.5 away). a full timeout still costs less than a crash.
 
 ## plans
 

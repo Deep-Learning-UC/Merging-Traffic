@@ -1,4 +1,4 @@
-# runs a bunch of episodes and checks the variables actually change how things drive
+# sanity checks that variables.py actually changes driving
 from collections import Counter
 
 import variables as v
@@ -8,7 +8,6 @@ from main import play
 OUTCOMES = {"made exit", "missed exit", "crashed", "stuck"}
 
 
-# plays full episodes and collects outcomes and speeds
 def run(seeds, you="random"):
     v.YOU["personality"] = you
     env, results = make_env(), []
@@ -18,7 +17,7 @@ def run(seeds, you="random"):
         info = {"lanes": env.lanes, "cars": len(env.road.vehicles) - 1, "me": env.vehicle.personality,
                 "side": env.exit_side, "length": round(env.split_x)}
 
-        # wrecks dont count, theyre just obstacles now
+        # skip wrecks
         def collect(env):
             for car in env.road.vehicles[1:]:
                 if car.crashed:
@@ -36,7 +35,6 @@ def avg(xs):
     return sum(xs) / max(len(xs), 1)
 
 
-# the actual checks
 def main():
     results, speeds, lane_speeds = run(range(12))
     for r in results:
@@ -55,7 +53,7 @@ def main():
         print(f"{k:>8} avg {avg(speeds[k]):.1f} m/s")
     assert avg(speeds[by_speed[0]]) < avg(speeds[by_speed[-1]])
 
-    # left lane should be the fast lane. checks what drivers want, since in a jam every lane crawls the same
+    # compare target speeds, in a jam every lane crawls the same
     want = {k: avg([w for w, _ in xs]) for k, xs in lane_speeds.items()}
     real = {k: avg([r for _, r in xs]) for k, xs in lane_speeds.items()}
     print(f"left lane wants {want['left']:.1f} (actual {real['left']:.1f}), right lane wants {want['right']:.1f} (actual {real['right']:.1f}) m/s")

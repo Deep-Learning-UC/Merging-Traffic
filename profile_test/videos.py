@@ -1,4 +1,4 @@
-# test drives the road with the dummydriver or a trained model, draws the HUD, and saves each life as a video in saved_videos/
+# records episodes with a HUD to saved_videos/
 import argparse
 import random
 import time
@@ -29,14 +29,13 @@ BIG, MED, SMALL = font(26, True), font(16, True), font(14)
 
 
 class FrameGrabber:
-    # highway-env only gives the in between frames if it thinks a video recorder is attached. so we pretend to be one
+    # highway-env only renders in between frames for a video recorder, so pretend to be one
     def __init__(self, env):
         self.env, self.frames = env, []
 
     def _capture_frame(self):
         self.frames.append(self.env.render())
 
-# draws the info box, model panel, color key, and end banner onto a frame
 def draw_hud(frame, hud, ending=None):
     img = Image.fromarray(frame).convert("RGBA")
     layer = Image.new("RGBA", img.size)
@@ -81,7 +80,7 @@ def draw_hud(frame, hud, ending=None):
         d.text(((WIDTH - tw) / 2, HEIGHT / 2 - 16), text, font=BIG, fill=color)
     return np.array(Image.alpha_composite(img, layer).convert("RGB"))
 
-# tkinter window that shows the frames live while the videos get made, with a Skip button
+# live preview window with a Skip button
 class Viewer:
     def __init__(self, title, fps=None):
         import tkinter as tk
@@ -101,13 +100,12 @@ class Viewer:
         self.wait = 1 / fps if fps else 0
         self.last = 0
 
-    # puts a frame on screen, waits if --realtime
     def show(self, frame, status=""):
         if not self.open:
             return
         photo = ImageTk.PhotoImage(Image.fromarray(frame))
         self.label.configure(image=photo)
-        # if you dont keep a reference tkinter garbage collects the image and shows nothing. lost an hour to this
+        # keep a reference or tkinter garbage collects the image
         self.label.image = photo
         self.status.configure(text=status)
         if self.wait:
@@ -115,7 +113,7 @@ class Viewer:
             if left > 0:
                 time.sleep(left)
             self.last = time.time()
-        # no mainloop, we just poke the window every frame. hacky but it works
+        # no mainloop, update every frame instead
         self.root.update()
 
     def press_skip(self):
@@ -135,7 +133,6 @@ def make_viewer(title, fps=None):
         return None
 
 
-# plays one episode and saves it as an mp4
 def record(env, model, ep, seed, out_path, viewer):
     obs, _ = env.reset(seed=seed)
     me, grabber = env.vehicle, FrameGrabber(env)
@@ -167,7 +164,7 @@ def record(env, model, ep, seed, out_path, viewer):
         hud["action"], hud["q"], hud["kind"] = ask_model(model, obs)
         grabber.frames = []
         obs, reward, done, _, _ = env.step(hud["action"])
-        # forgot this once and every video was 3 seconds long. never again
+        # grabber misses the last frame of each step
         grabber.frames.append(env.render())
         hud["reward"] += reward
         for frame in grabber.frames:
@@ -180,7 +177,6 @@ def record(env, model, ep, seed, out_path, viewer):
     writer.close()
     return result, hud["t"]
 
-# parses options, loads the model, and records each episode. main.py calls this
 def run(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--episodes", type=int, default=VIDEO["episodes"])
