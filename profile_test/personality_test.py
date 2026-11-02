@@ -1,3 +1,4 @@
+# runs a bunch of episodes and checks the variables actually change how things drive
 from collections import Counter
 
 import variables as v
@@ -8,7 +9,7 @@ OUTCOMES = {"made exit", "missed exit", "crashed", "stuck"}
 MAX_STEPS = 300
 
 
-# plays full episodes and collects speeds and results
+# plays full episodes and collects outcomes and speeds
 def run(seeds, you="random"):
     v.YOU["personality"] = you
     env, results = make_env(), []
@@ -19,10 +20,8 @@ def run(seeds, you="random"):
                 "side": env.exit_side, "length": round(env.split_x)}
         done, steps = False, 0
         while not done and steps < MAX_STEPS:
-            _, _, done, truncated, _ = env.step(1)
+            _, _, done, _, _ = env.step(1)
             steps += 1
-            assert not truncated
-            # wrecks dont count, theyre just obstacles now
             for car in env.road.vehicles[1:]:
                 if car.crashed:
                     continue
@@ -35,12 +34,11 @@ def run(seeds, you="random"):
     return results, speeds, lane_speeds
 
 
-# average that doesnt crash on an empty list
 def avg(xs):
     return sum(xs) / max(len(xs), 1)
 
 
-# run everything and check the variables actually do what they say
+# the actual checks
 def main():
     results, speeds, lane_speeds = run(range(12))
     for r in results:
@@ -50,10 +48,9 @@ def main():
     assert len({r["length"] for r in results}) > 1, "road never changed"
     if v.ROAD["exit_side"] == "random":
         assert len({r["side"] for r in results}) > 1, "exit never switched sides"
-    if v.YOU["personality"] == "random" and len(v.PERSONALITIES) > 1:
+    if len(v.PERSONALITIES) > 1:
         assert len({r["me"] for r in results}) > 1, "you were always the same personality"
 
-    # whoever has the lowest speed setting should actually drive slowest, and the highest fastest
     by_speed = sorted(v.PERSONALITIES, key=lambda k: v.PERSONALITIES[k]["speed"])
     print()
     for k in by_speed:

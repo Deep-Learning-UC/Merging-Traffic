@@ -1,3 +1,4 @@
+# runs episodes, draws the HUD, and saves each one as a video in saved_videos/
 import argparse
 import importlib
 import random
@@ -26,8 +27,7 @@ def font(size, bold=False):
 
 BIG, MED, SMALL = font(26, True), font(16, True), font(14)
 
-# loads whatever MODEL says. MODEL["name"] is looked up in MODEL["library"], so new models need no code changes.
-# no model = just drive without it
+# MODEL["name"] is looked up in MODEL["library"], so new models need no code changes
 def load_model():
     try:
         algo = getattr(importlib.import_module(MODEL["library"]), MODEL["name"])
@@ -36,8 +36,7 @@ def load_model():
         print(f"couldnt load {MODEL['name']} from {MODEL['path']} ({e.__class__.__name__}: {e}), driving without it")
         return None
 
-# what the model thinks of each action. DQN style models give q values (how good each action is),
-# PPO style models give the chance theyd pick each one. either way the biggest one wins
+# DQN-style models expose q values, PPO-style expose action probabilities
 def ask_model(model, obs):
     if model is None:
         return 1, None, ""
@@ -51,17 +50,15 @@ def ask_model(model, obs):
             return int(model.predict(obs, deterministic=True)[0]), None, ""
     return int(np.argmax(scores)), scores, kind
 
-# collects every physics frame so the video is smooth
 class FrameGrabber:
     # highway-env only gives the in between frames if it thinks a video recorder is attached. so we pretend to be one
     def __init__(self, env):
         self.env, self.frames = env, []
 
-    # highway-env calls this each in between frame
     def _capture_frame(self):
         self.frames.append(self.env.render())
 
-# draws the info boxes, q value bars, color key, and end banner on one frame
+# draws the info box, model panel, color key, and end banner onto a frame
 def draw_hud(frame, hud, ending=None):
     img = Image.fromarray(frame).convert("RGBA")
     layer = Image.new("RGBA", img.size)
@@ -75,7 +72,6 @@ def draw_hud(frame, hud, ending=None):
 
     x0, y0 = WIDTH - 316, 16
     d.rounded_rectangle((x0, y0, WIDTH - 16, y0 + 200), 12, fill=PANEL)
-    # model name comes from variables. "driving" if its in control, "would pick" if dummydriver is
     title = f"{MODEL['name']} driving" if YOU["driver"] == "model" else f"{MODEL['name']} would pick"
     d.text((x0 + 16, y0 + 12), title if hud["has_model"] else "No model", font=MED, fill=TEXT)
     if hud["q"] is not None:
@@ -84,7 +80,6 @@ def draw_hud(frame, hud, ending=None):
         span = max(q.max() - q.min(), 1e-6)
         for i, name in enumerate(ACTIONS):
             y, picked = y0 + 48 + i * 28, i == a
-            # bar length scaled so the worst action is short and the best is full
             fill = int(150 * (0.15 + 0.85 * (q[i] - q.min()) / span))
             d.text((x0 + 16, y), name, font=MED if picked else SMALL, fill=TEXT if picked else DIM)
             d.rounded_rectangle((x0 + 90, y + 3, x0 + 240, y + 15), 6, fill=(45, 52, 66))
@@ -92,7 +87,6 @@ def draw_hud(frame, hud, ending=None):
             value = f"{q[i] * 100:.0f}%" if hud["kind"] == "chances" else f"{q[i]:.2f}"
             d.text((x0 + 248, y), value, font=SMALL, fill=TEXT if picked else DIM)
 
-    # color key builds itself from PERSONALITIES so new ones just show up
     items = [("you", VIDEO["you_color"])] + [(k, p["color"]) for k, p in PERSONALITIES.items()] + [("wreck", WRECK_COLOR)]
     d.rounded_rectangle((16, HEIGHT - 48, 30 + sum(30 + d.textlength(k, font=SMALL) for k, _ in items), HEIGHT - 14), 10, fill=PANEL)
     x = 30
@@ -108,7 +102,7 @@ def draw_hud(frame, hud, ending=None):
         d.text(((WIDTH - tw) / 2, HEIGHT / 2 - 16), text, font=BIG, fill=color)
     return np.array(Image.alpha_composite(img, layer).convert("RGB"))
 
-# plays one episode, saves it to mp4, and shows it in the window
+# plays one episode and saves it as an mp4
 def record(env, model, ep, seed, out_path, viewer):
     obs, _ = env.reset(seed=seed)
     me, grabber = env.vehicle, FrameGrabber(env)
@@ -119,11 +113,9 @@ def record(env, model, ep, seed, out_path, viewer):
     writer = imageio.get_writer(out_path, fps=VIDEO["fps"], codec="libx264", quality=8, macro_block_size=16)
     count = 0
 
-    # draw on one frame, write it to the video, show it in the window
     def show(frame, ending=None):
         nonlocal count
         count += 1
-        # skipping frames is the cheap way to speed up the video. end card never gets skipped
         if ending is None and count % VIDEO["speed_up"]:
             return
         picture = draw_hud(frame, hud, ending)
@@ -136,7 +128,6 @@ def record(env, model, ep, seed, out_path, viewer):
     if viewer:
         viewer.skip = False
     while not done:
-        # skip button, or it just ran way too long (probably stuck)
         if (viewer and viewer.skip) or hud["t"] > VIDEO["give_up_seconds"]:
             skipped = True
             break
@@ -156,7 +147,7 @@ def record(env, model, ep, seed, out_path, viewer):
     writer.close()
     return result, hud["t"]
 
-# make the videos
+# parses args, loads the model, and records each episode
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--episodes", type=int, default=VIDEO["episodes"])
@@ -164,13 +155,11 @@ def main():
     parser.add_argument("--no-window", action="store_true")
     parser.add_argument("--realtime", action="store_true")
     args = parser.parse_args()
-    # new random test every run. it prints the seed so you can replay a good or bad one with --seed
     seed = args.seed if args.seed is not None else random.randint(0, 99999)
     print(f"seed {seed}")
 
     VIDEO_DIR.mkdir(exist_ok=True)
     model = load_model()
-    # window shows up if VIDEO["show_window"] is on, --no-window turns it off for one run
     show = VIDEO["show_window"] and not args.no_window
     viewer = None if not show else make_viewer("Merging Traffic", VIDEO["fps"] if args.realtime else None)
     env = make_env("rgb_array", screen_width=WIDTH, screen_height=HEIGHT, scaling=6.0,

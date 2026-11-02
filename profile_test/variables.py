@@ -1,7 +1,7 @@
 YOU = {
     "personality": "normal",  # "random" or a personality name like "slow"
-    "driver": "dummydriver",  # "dummydriver" = hand written rules from simulated_drivers.py, "model" = trained model drives
-    "start_speed": 22,  # starting speed on the ramp (m/s)
+    "driver": "dummydriver",  # "dummydriver" (Driver rules in environment.py) or "model" (MODEL below)
+    "start_speed": 22,  # m/s
 }
 
 # every driver starts with these. this is basically the normal driver
@@ -83,52 +83,52 @@ PERSONALITIES = {
 }
 
 LANES = {
-    "speed_limit": 29,  # posted speed limit (m/s). about 65 mph
-    "left_lane_bonus": 5,  # speed added in the far left lane (m/s)
-    "right_lane_bonus": -3,  # speed added in the far right lane (m/s). lanes in between blend
-    "ramp_and_exit_speed": 22,  # max desired speed on the on ramp and exit lane (m/s)
+    "speed_limit": 29,  # m/s, about 65 mph
+    "left_lane_bonus": 5,  # m/s
+    "right_lane_bonus": -3,  # m/s, negative = slower. middle lanes blend between
+    "ramp_and_exit_speed": 22,  # m/s
 }
 
 TRAFFIC = {
-    "min_cars": 15,  # fewest other cars per episode
-    "max_cars": 40,  # most other cars per episode
-    "exit_chance": 0.3,  # chance another car also takes the exit
-    "spawn_spacing": 20,  # minimum distance between cars at spawn (m)
-    "spawn_speed": 22,  # every car starts at this speed so nobody rear ends at spawn (m/s)
+    "min_cars": 15,
+    "max_cars": 40,
+    "exit_chance": 0.3,  # share of traffic that also takes the exit
+    "spawn_spacing": 20,  # m
+    "spawn_speed": 22,  # m/s, same for everyone so nobody rear ends at spawn
 }
 
 ROAD = {
     "exit_side": "random",  # "random", "left", or "right"
-    "lanes": (3, 3),  # number of highway lanes (min, max)
-    "ramp_length": (120, 230),  # length of the on ramp lane (m)
-    "exit_distance": (250, 500),  # distance from end of ramp to the exit lane (m)
-    "exit_lane_length": (80, 120),  # length of the exit lane before it splits off (m)
-    "exit_ramp_length": 80,  # length of the exit ramp. halfway counts as made exit (m)
+    "lanes": (3, 3),  # (min, max)
+    "ramp_length": (120, 230),  # (min, max) m
+    "exit_distance": (250, 500),  # (min, max) m
+    "exit_lane_length": (80, 120),  # (min, max) m
+    "exit_ramp_length": 80,  # m. halfway up counts as made exit
 }
 
 REWARDS = {
-    "crash": -5,  # reward for crashing
-    "made_exit": 3,  # reward for taking the exit
-    "missed_exit": -1,  # reward for missing the exit
-    "speed": 0.2,  # max reward per step for driving fast
-    "speed_range": (20, 30),  # speed range the speed reward scales over (m/s)
-    "lane_change": -0.05,  # reward per lane change
+    "crash": -5,
+    "made_exit": 3,
+    "missed_exit": -1,
+    "speed": 0.2,  # max per step
+    "speed_range": (20, 30),  # m/s. bonus goes from 0 to full across this range
+    "lane_change": -0.05,  # per lane change
 }
 
 VIDEO = {
-    "episodes": 3,  # number of videos to make
-    "fps": 15,  # frames per second, also physics steps per second
-    "speed_up": 2,  # video playback speed multiplier
-    "end_card_seconds": 1,  # how long the result banner shows (s)
-    "show_window": True,  # True = watch it live in the tkinter window while videos are made, False = just save them
-    "give_up_seconds": 60,  # auto skip a video if the episode runs this long, for when theres no window (s)
-    "you_color": (50, 200, 0),  # color of your car in the video
+    "episodes": 3,  # videos per run
+    "fps": 15,  # also physics steps per second
+    "speed_up": 2,  # 2 = plays twice as fast
+    "end_card_seconds": 1,
+    "show_window": True,  # False = just save the videos
+    "give_up_seconds": 60,  # s. auto skips stuck episodes when theres no window
+    "you_color": (50, 200, 0),
 }
 
 MODEL = {
-    "name": "DQN",  # model class to load, like "DQN", "PPO", "A2C". also the name shown on the video
-    "library": "stable_baselines3",  # where that class lives. "sb3_contrib" for the extra ones like QRDQN
-    "path": "../highway_dqn/model.zip",  # trained model to load, relative to this folder
+    "name": "DQN",  # "DQN", "PPO", "A2C", etc. also shown on the video
+    "library": "stable_baselines3",  # "sb3_contrib" for the extra ones
+    "path": "../highway_dqn/model.zip",  # relative to this folder
 }
 
 # fills in every personality with the defaults for anything it didnt change.
