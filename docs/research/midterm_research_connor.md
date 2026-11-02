@@ -59,6 +59,26 @@ new TDL
  - from Jace
  - https://arxiv.org/abs/2309.17080 
 
+
+
+ Questions for each model
+ 1) is there a free repo somewhere? (doesn't necessarily have to be from the authors)
+ 2) how does the model work overall? 
+ 3) what does it improve on contemporaries?
+ 4) what family does it fall under? 
+   1) Q-learning (DQN)
+   2) Policy Gradient (PPO)
+   3) Off-Policy Actor-Critic (SAC)
+   4) Other
+ 5) what are the action spaces that it works on? e.g. discrete, continuous, etc.
+ 6) others from the report:
+   1) name of model
+   2) authors
+   3) year
+   4) title of paper
+   5) performance on metrics
+   6) notable strengths/weaknesses
+
 ## 5 PPO+: Enhancing proximal policy optimization
  - https://rlj.cs.umass.edu/2026/papers/Paper8.pdf
  1) is there a free repo somewhere? (doesn't necessarily have to be from the authors)
@@ -117,23 +137,7 @@ new TDL
  - may 2025
 
 
-Questions for each model
- 1) is there a free repo somewhere? (doesn't necessarily have to be from the authors)
- 2) how does the model work overall? 
- 3) what does it improve on contemporaries?
- 4) what family does it fall under? 
-   1) Q-learning (DQN)
-   2) Policy Gradient (PPO)
-   3) Off-Policy Actor-Critic (SAC)
-   4) Other
- 5) what are the action spaces that it works on? e.g. discrete, continuous, etc.
- 6) others from the report:
-   1) name of model
-   2) authors
-   3) year
-   4) title of paper
-   5) performance on metrics
-   6) notable strengths/weaknesses
+
 
 
 take each of these and evaluate based on the questions in summary 21, first finding if there is a repo
