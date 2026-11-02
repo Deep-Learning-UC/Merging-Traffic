@@ -1,12 +1,13 @@
 # the world the model trains in: random road, traffic and how it drives, rewards, and how episodes end
 import numpy as np
+from gymnasium import spaces
 from highway_env.envs.common.abstract import AbstractEnv
 from highway_env.road.lane import LineType, StraightLane
 from highway_env.road.road import Road, RoadNetwork
 from highway_env.vehicle.behavior import IDMVehicle
 from highway_env.vehicle.objects import Obstacle
 
-from variables import LANES, PERSONALITIES, REWARDS, ROAD, TRAFFIC, VIDEO, YOU
+from variables import LANES, PERSONALITIES, REWARDS, ROAD, TRAFFIC, TRAIN, VIDEO, YOU
 
 W = StraightLane.DEFAULT_WIDTH
 C, S, N = LineType.CONTINUOUS_LINE, LineType.STRIPED, LineType.NONE
@@ -129,6 +130,30 @@ class Driver(IDMVehicle):
 
 # the world the model trains in. highway-env runs the physics, we just build the road, cars, rewards, and endings
 class MergeExitEnv(AbstractEnv):
+    # highway-env's defaults only let the model pick 20, 25, or 30 m/s and only see cars in front.
+    # so "slower" at 20 did nothing and it changed lanes into cars it couldnt see. this fixes both
+    @classmethod
+    def default_config(cls):
+        config = super().default_config()
+        config["observation"] = {"type": "Kinematics", "vehicles_count": YOU["cars_seen"], "see_behind": True, "include_obstacles": True}
+        config["action"] = {"type": "DiscreteMetaAction", "target_speeds": YOU["model_speeds"]}
+        config["simulation_frequency"] = TRAIN["physics_per_second"]
+        return config
+
+    # the model sees the 5 nearest cars plus 2 numbers: exit side (1 left, -1 right) and meters to the exit / 1000.
+    # without these it has no clue where the exit is and could never learn to take it
+    def define_spaces(self):
+        super().define_spaces()
+        self.observation_space = spaces.Box(-np.inf, np.inf, (int(np.prod(self.observation_space.shape)) + 2,), np.float32)
+
+    def observe(self, cars):
+        exit_info = [1.0 if self.exit_side == "left" else -1.0, (self.split_x - self.vehicle.position[0]) / 1000]
+        return np.concatenate([np.ravel(cars), exit_info]).astype(np.float32)
+
+    def reset(self, **kwargs):
+        obs, info = super().reset(**kwargs)
+        return self.observe(obs), info
+
     # new random road and traffic every episode
     def _reset(self):
         r = lambda key: self.np_random.uniform(*ROAD[key])
@@ -208,28 +233,35 @@ class MergeExitEnv(AbstractEnv):
     def step(self, action):
         # what the model sees shrinks with speed too
         self.PERCEPTION_DISTANCE = sight_at(PERSONALITIES[self.vehicle.personality], self.vehicle.speed)
-        result = super().step(action)
+        obs, reward, done, truncated, info = super().step(action)
         for v in self.road.vehicles:
             if v.crashed:
                 v.color = WRECK_COLOR
         ramp_end = self.split_x + ROAD["exit_ramp_length"] - 10
         self.road.vehicles = [v for v in self.road.vehicles if v is self.vehicle or not (
             v.position[0] > self.end_x or v.lane_index[:2] == ("d", "x") and v.position[0] > ramp_end)]
-        return result
+        return self.observe(obs), reward, done, truncated, info
 
     # per step score from REWARDS, what a model learns from
     def _reward(self, action):
         lo, hi = REWARDS["speed_range"]
         r = REWARDS["speed"] * np.clip((self.vehicle.speed - lo) / (hi - lo), 0, 1)
         # actions 0 and 2 are lane left and lane right
-        r += REWARDS["lane_change"] * (action in (0, 2))
+        r += REWARDS["lane_change"] * (action in (0, 2)) + REWARDS["per_second"] + REWARDS["stopped"] * (self.vehicle.speed < 2)
         return r + {"crashed": REWARDS["crash"], "made exit": REWARDS["made_exit"], "missed exit": REWARDS["missed_exit"]}.get(self.outcome(), 0)
+
+    # so training can count exits and crashes, not just reward
+    def _info(self, obs, action):
+        info = super()._info(obs, action)
+        info["outcome"] = self.outcome()
+        return info
 
     def _is_terminated(self):
         return self.outcome() is not None
 
+    # no time limit unless max_seconds is set, train.py sets it so a parked model cant stall training forever
     def _is_truncated(self):
-        return False
+        return self.config.get("max_seconds") is not None and self.time >= self.config["max_seconds"]
 
 
 def make_env(render_mode=None, **config):

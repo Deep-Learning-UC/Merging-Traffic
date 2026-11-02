@@ -8,7 +8,7 @@ import imageio.v2 as imageio
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
-from variables import MODEL, PERSONALITIES, VIDEO, YOU
+from variables import MODEL, PERSONALITIES, TRAIN, VIDEO, YOU
 from viewer import make_viewer
 from environment import WRECK_COLOR, make_env
 
@@ -27,14 +27,19 @@ def font(size, bold=False):
 
 BIG, MED, SMALL = font(26, True), font(16, True), font(14)
 
-# MODEL["name"] is looked up in MODEL["library"], so new models need no code changes
-def load_model():
+# MODEL["name"] is looked up in MODEL["library"], so new models need no code changes.
+# a model trained on a different input (like connors old one) gets skipped instead of crashing
+def load_model(env):
     try:
         algo = getattr(importlib.import_module(MODEL["library"]), MODEL["name"])
-        return algo.load((HERE / MODEL["path"]).resolve(), device="cpu")
+        model = algo.load((HERE / MODEL["path"]).resolve(), device="cpu")
     except Exception as e:
         print(f"couldnt load {MODEL['name']} from {MODEL['path']} ({e.__class__.__name__}: {e}), driving without it")
         return None
+    if model.observation_space.shape != env.observation_space.shape:
+        print(f"{MODEL['path']} was trained on a different input {model.observation_space.shape}, this road gives {env.observation_space.shape}. skipping it")
+        return None
+    return model
 
 # DQN-style models expose q values, PPO-style expose action probabilities
 def ask_model(model, obs):
@@ -154,18 +159,23 @@ def main():
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--no-window", action="store_true")
     parser.add_argument("--realtime", action="store_true")
+    parser.add_argument("--model", help="name of a model in TRAIN folder, like PPO. makes it drive")
     args = parser.parse_args()
+    if args.model:
+        MODEL.update(name=args.model, path=f"{TRAIN['folder']}/{args.model}.zip")
+        YOU["driver"] = "model"
     seed = args.seed if args.seed is not None else random.randint(0, 99999)
     print(f"seed {seed}")
 
     VIDEO_DIR.mkdir(exist_ok=True)
-    model = load_model()
     show = VIDEO["show_window"] and not args.no_window
     viewer = None if not show else make_viewer("Merging Traffic", VIDEO["fps"] if args.realtime else None)
     env = make_env("rgb_array", screen_width=WIDTH, screen_height=HEIGHT, scaling=6.0,
                    centering_position=[0.35, 0.62], simulation_frequency=VIDEO["fps"], policy_frequency=1)
+    model = load_model(env)
+    driver = MODEL["name"] if YOU["driver"] == "model" else YOU["driver"]
     for ep in range(args.episodes):
-        out = VIDEO_DIR / f"profiles_merge_ep{ep}.mp4"
+        out = VIDEO_DIR / f"profiles_{driver}_ep{ep}.mp4"
         result, t = record(env, model, ep, seed + ep, out, viewer)
         print(f"episode {ep}: {result} after {t:.0f}s -> {out}")
     env.close()

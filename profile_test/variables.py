@@ -2,6 +2,8 @@ YOU = {
     "personality": "normal",  # "random" or a personality name like "slow"
     "driver": "dummydriver",  # "dummydriver" (Driver rules in environment.py) or "model" (MODEL below)
     "start_speed": 22,  # m/s
+    "model_speeds": [0, 5, 10, 15, 20, 25, 30, 35],  # m/s the model can pick between with faster/slower. 0 lets it stop and wait
+    "cars_seen": 8,  # how many nearby cars the model sees, in front and behind
 }
 
 # every driver starts with these. this is basically the normal driver
@@ -111,8 +113,10 @@ REWARDS = {
     "made_exit": 3,
     "missed_exit": -1,
     "speed": 0.2,  # max per step
-    "speed_range": (20, 30),  # m/s. bonus goes from 0 to full across this range
+    "speed_range": (0, 30),  # m/s. bonus goes from 0 to full across this range, so every bit of speed counts
     "lane_change": -0.05,  # per lane change
+    "stopped": -0.02,  # per second while barely moving (under 2 m/s). small, just enough that it keeps up with traffic
+    "per_second": -0.02,  # every second costs a bit so parking is bad. a full timeout (-2.4) still has to cost less than a crash
 }
 
 VIDEO = {
@@ -128,7 +132,28 @@ VIDEO = {
 MODEL = {
     "name": "DQN",  # "DQN", "PPO", "A2C", etc. also shown on the video
     "library": "stable_baselines3",  # "sb3_contrib" for the extra ones
-    "path": "../highway_dqn/model.zip",  # relative to this folder
+    "path": "trained/DQN.zip",  # relative to this folder. main.py --model NAME overrides name and path
+}
+
+TRAIN = {
+    "models": ["DQN", "PPO", "A2C"],  # train.py trains these at the same time, evaluate.py scores them
+    "max_steps": 300_000,  # per model. training stops here even if it never hits the goal
+    "goal_exit_rate": 0.9,  # stops early once this share of the last 100 lives made the exit
+    "envs": 5,  # copies of the road each model trains on at once. more = faster but more cpu cores
+    "gamma": 0.95,  # how much future reward counts. the exit is ~40 steps out, too low and it never learns to care
+    "seed": 0,
+    "max_life_seconds": 120,  # training only. a model that parks gets cut off here as "timed out". tests have no limit
+    "physics_per_second": 5,  # physics steps per simulated second. 5 trains ~3x faster than 15, videos still use VIDEO fps
+    "watch_port": 47800,  # watch.py listens here for the live training lives, one port per model after this
+    "folder": "trained",  # where train.py saves models, relative to this folder
+    "checkpoint_every": 1000,  # steps between saves while training, watch.py shows the newest one
+    "eval_episodes": 30,  # episodes per model in evaluate.py. every model gets the same roads
+    "settings": {  # extra settings per model, passed straight to stable baselines
+        "DQN": {"learning_rate": 5e-4, "buffer_size": 50_000, "learning_starts": 1000, "batch_size": 64,
+                "target_update_interval": 500, "exploration_fraction": 0.3},
+        "PPO": {"learning_rate": 3e-4, "n_steps": 256, "batch_size": 64},
+        "A2C": {"learning_rate": 7e-4},
+    },
 }
 
 # fills in every personality with the defaults for anything it didnt change.
