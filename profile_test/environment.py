@@ -144,10 +144,15 @@ class MergeExitEnv(AbstractEnv):
     # without these it has no clue where the exit is and could never learn to take it
     def define_spaces(self):
         super().define_spaces()
-        self.observation_space = spaces.Box(-np.inf, np.inf, (int(np.prod(self.observation_space.shape)) + 2,), np.float32)
+        self.observation_space = spaces.Box(-np.inf, np.inf, (int(np.prod(self.observation_space.shape)) + 3,), np.float32)
+
+    # lanes between you and the exit lane. negative = exit lane is to your left
+    def lanes_to_exit(self):
+        exit_y = -W if self.exit_side == "left" else self.lanes * W
+        return (exit_y - self.vehicle.position[1]) / W
 
     def observe(self, cars):
-        exit_info = [1.0 if self.exit_side == "left" else -1.0, (self.split_x - self.vehicle.position[0]) / 1000]
+        exit_info = [1.0 if self.exit_side == "left" else -1.0, (self.split_x - self.vehicle.position[0]) / 1000, self.lanes_to_exit() / 4]
         return np.concatenate([np.ravel(cars), exit_info]).astype(np.float32)
 
     def reset(self, **kwargs):
@@ -165,6 +170,7 @@ class MergeExitEnv(AbstractEnv):
         self.exit_x = self.ramp_x + r("exit_distance")
         self.split_x = self.exit_x + r("exit_lane_length")
         self.end_x = self.split_x + 200
+        self.density = self.np_random.uniform(*TRAFFIC["density"])
         self.make_road()
         self.make_cars()
 
@@ -207,15 +213,30 @@ class MergeExitEnv(AbstractEnv):
         me.color = VIDEO["you_color"]
         self.road.vehicles.append(me)
         self.vehicle = me
-        taken = {i: [] for i in range(self.lanes)}
-        for _ in range(self.np_random.integers(TRAFFIC["min_cars"], TRAFFIC["max_cars"] + 1)):
-            for _ in range(10):
-                i, x = int(self.np_random.integers(self.lanes)), self.np_random.uniform(0, self.exit_x * 0.7)
-                if all(abs(x - o) > TRAFFIC["spawn_spacing"] for o in taken[i]):
-                    taken[i].append(x)
-                    car = Driver(self.road, self.road.network.get_lane(("a", "b", i)).position(x, 0), speed=TRAFFIC["spawn_speed"])
-                    self.road.vehicles.append(car.setup(self.pick(), self.np_random, self.np_random.random() < TRAFFIC["exit_chance"], self))
+        self.last_x, self.wrecks_seen, self.ramp_seconds = me.position[0], set(), 0
+        self.fill_traffic(start=True)
+
+    # keeps every lane at the traffic density around you so the flow never dries up. at the start it fills the
+    # whole stretch, after that new cars only appear at the far edges, out of view, so nothing pops in on screen
+    def fill_traffic(self, start=False):
+        behind, ahead = TRAFFIC["around_you"]
+        me_x = self.vehicle.position[0]
+        lo, hi = max(0, me_x - behind), min(self.end_x - 30, me_x + ahead)
+        want = round(self.density * (hi - lo) / 1000)
+        for i in range(self.lanes):
+            taken = [v.position[0] for v in self.road.vehicles if abs(v.position[1] - i * W) < W]
+            have = sum(lo <= x <= hi for x in taken)
+            for x in (self.np_random.uniform(lo, hi, want * 3) if start else (lo, hi)):
+                if have >= want:
                     break
+                if all(abs(x - o) > TRAFFIC["spawn_spacing"] for o in taken):
+                    car = Driver(self.road, np.array([x, i * W]), speed=TRAFFIC["spawn_speed"])
+                    self.road.vehicles.append(car.setup(self.pick(), self.np_random, self.np_random.random() < TRAFFIC["exit_chance"], self))
+                    # new cars at the edges come in at their own lane speed so the ones behind actually catch up and pass
+                    if not start:
+                        car.speed = car.lane_speed()
+                    taken.append(x)
+                    have += 1
 
     # made exit, missed exit, crashed, or None while still driving
     def outcome(self):
@@ -238,16 +259,37 @@ class MergeExitEnv(AbstractEnv):
             if v.crashed:
                 v.color = WRECK_COLOR
         ramp_end = self.split_x + ROAD["exit_ramp_length"] - 10
+        me_x = self.vehicle.position[0]
+        keep = (me_x - TRAFFIC["around_you"][0] - 50, me_x + TRAFFIC["around_you"][1] + 50)
         self.road.vehicles = [v for v in self.road.vehicles if v is self.vehicle or not (
-            v.position[0] > self.end_x or v.lane_index[:2] == ("d", "x") and v.position[0] > ramp_end)]
+            v.position[0] > self.end_x or not keep[0] < v.position[0] < keep[1] or v.lane_index[:2] == ("d", "x") and v.position[0] > ramp_end)]
+        self.fill_traffic()
         return self.observe(obs), reward, done, truncated, info
 
     # per step score from REWARDS, what a model learns from
     def _reward(self, action):
-        lo, hi = REWARDS["speed_range"]
-        r = REWARDS["speed"] * np.clip((self.vehicle.speed - lo) / (hi - lo), 0, 1)
+        me = self.vehicle
+        # speed: bonus inside the good range, a cost for every m/s outside it. too slow is fine when something is right in front
+        lo, hi = REWARDS["good_speed"]
+        front = self.road.neighbour_vehicles(me, me.lane_index)[0]
+        blocked = front is not None and me.lane_distance_to(front) < REWARDS["stopped_ok_within"]
+        too_slow = 0 if blocked else max(lo - me.speed, 0)
+        r = REWARDS["speed"] if lo <= me.speed <= hi else REWARDS["off_speed"] * (too_slow + max(me.speed - hi, 0))
+        # the longer you sit on the on ramp the more each second there costs
+        if me.lane_index[:2] == ("a", "b") and me.lane_index[2] == self.lanes:
+            self.ramp_seconds += 1
+            r += REWARDS["on_ramp"] * self.ramp_seconds
         # actions 0 and 2 are lane left and lane right
-        r += REWARDS["lane_change"] * (action in (0, 2)) + REWARDS["per_second"] + REWARDS["stopped"] * (self.vehicle.speed < 2)
+        r += REWARDS["lane_change"] * (action in (0, 2)) + REWARDS["per_second"]
+        # other cars that just wrecked close to you count as you causing it
+        new_wrecks = [c for c in self.road.vehicles if c.crashed and c is not me and id(c) not in self.wrecks_seen]
+        self.wrecks_seen |= {id(c) for c in new_wrecks}
+        r += REWARDS["caused_crash"] * sum(abs(c.position[0] - me.position[0]) < 30 for c in new_wrecks)
+        # learning hints: a little for every meter closer to the exit, and a cost for being lanes away from it near the end
+        r += REWARDS["progress"] * (self.vehicle.position[0] - self.last_x)
+        self.last_x = self.vehicle.position[0]
+        if self.vehicle.position[0] > self.split_x - REWARDS["wrong_lane_within"]:
+            r += REWARDS["wrong_lane"] * abs(self.lanes_to_exit())
         return r + {"crashed": REWARDS["crash"], "made exit": REWARDS["made_exit"], "missed exit": REWARDS["missed_exit"]}.get(self.outcome(), 0)
 
     # so training can count exits and crashes, not just reward

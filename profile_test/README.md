@@ -1,4 +1,4 @@
-# My(Eli) test
+# Train on profiles Test
 
 my sandbox. doesnt touch the main code. just testing driver personalities, not the full project.
 
@@ -7,37 +7,45 @@ my sandbox. doesnt touch the main code. just testing driver personalities, not t
 - `variables.py` - change everything here
 - `environment.py` - the world the model trains in. road, traffic and the `Driver` rules they drive with, rewards, endings
 - `personality_test.py` - checks the variables actually do stuff
-- `main.py` - live window + saves videos to `saved_videos/`. `--model PPO` records a trained model
+- `main.py` - start here. asks if you want to train or make videos. also holds the shared helpers
 - `train.py` - trains DQN, PPO, A2C at the same time on this road, saves to `trained/`
+- `videos.py` - test drives with the dummydriver or a trained model and saves videos to `saved_videos/`
 - `watch.py` - live time lapse of the actual training lives + exit rate chart
 - `evaluate.py` - scores every model and the dummydriver on the same unseen roads, writes `results.md`
 
 ## setup
 
-if on linux
-```bash
+windows (and mac), no venv needed:
+```
 cd profile_test
-python -m venv .venv
-.venv/bin/pip install gymnasium highway-env stable-baselines3 imageio imageio-ffmpeg pillow
-source .venv/bin/activate
+pip install gymnasium highway-env stable-baselines3 imageio imageio-ffmpeg pillow
 ```
 
-not on linux just `cd profile_test && pip install gymnasium highway-env stable-baselines3 imageio imageio-ffmpeg pillow`
+linux (Arch):
+```
+cd profile_test
+python -m venv .venv
+source .venv/bin/activate
+pip install gymnasium highway-env stable-baselines3 imageio imageio-ffmpeg pillow
+```
 
-turn the live window on or off with `VIDEO["show_window"]` in `variables.py`.
+a venv is optional everywhere else. on windows its `python -m venv .venv` then `.venv\Scripts\activate`.
 
 ## run
 
-```bash
-python personality_test.py
-python main.py
-python main.py --realtime
-python main.py --no-window --episodes 5 --seed 3
-python train.py          # all 3 models, stops when 90% of the last 100 lives make the exit
-python watch.py          # watch it learn, run while train.py is going
-python evaluate.py       # after training
-python main.py --model PPO
 ```
+python main.py                     # asks: 1 train the models, 2 test drive and make videos
+python main.py train               # skip the question. asks about the live window
+python main.py train --no-ui       # no window, faster. use this on a server
+python main.py videos              # videos to saved_videos/, VIDEO["show_window"] turns the window on/off
+python main.py videos --model PPO  # video of a trained model
+python main.py videos --no-window --episodes 5 --seed 3
+python evaluate.py                 # after training, scores everyone on the same roads
+python personality_test.py         # checks the personalities and road work
+```
+
+training saves to `trained/` and overwrites it each run
+the log is `trained/training_log.txt`
 
 ## notes
 
@@ -70,4 +78,5 @@ goal from the main readme: find the model that merges on and off the highway as 
 
 - DQN - easy, already in SB3, already have one. **going with this.**
 - PPO - same library, more stable, slower to train. good second.
+- A2C
 - PPO+ - 2026 paper with code but too much work for MVP.

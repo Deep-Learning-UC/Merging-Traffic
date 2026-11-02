@@ -1,10 +1,13 @@
 # trains every model in TRAIN["models"] at the same time, saves checkpoints to TRAIN["folder"],
-# and stops a model early once it makes the exit TRAIN["goal_exit_rate"] of its last 100 lives
+# and stops a model early once it makes the exit TRAIN["goal_exit_rate"] of its last 100 lives.
+# asks if you want the live watcher. --ui / --no-ui skip the question, servers with no keyboard use TRAIN["show_ui"]
 import argparse
 import importlib
 import os
 import pickle
 import socket
+import subprocess
+import sys
 import time
 from functools import partial
 from multiprocessing import Process
@@ -19,50 +22,60 @@ import variables as v
 from environment import make_env
 
 HERE = Path(__file__).resolve().parent
+LOG = HERE / v.TRAIN["folder"] / "training_log.txt"
 
 
-# sends one road copy's lives to watch.py as tiny udp packets: the road once per life, then car positions every
-# physics frame. if watch.py isnt open the packets just go nowhere, so training doesnt care either way
+# prints and also writes to the log file, so a server run keeps a record and watch.py can read it
+def say(text):
+    print(text, flush=True)
+    with open(LOG, "a") as f:
+        f.write(text + "\n")
+
+
+# streams every road copy's lives to watch.py as tiny udp packets: the road when a life starts, car positions every
+# physics frame, and how it ended. each packet says which copy it came from.
+# if watch.py isnt open the packets just go nowhere, so training doesnt care either way
 class Broadcast(gym.Wrapper):
-    def __init__(self, env, port):
+    def __init__(self, env, port, rank):
         super().__init__(env)
-        self.sock, self.addr, self.life = socket.socket(socket.AF_INET, socket.SOCK_DGRAM), ("127.0.0.1", port), 0
+        self.sock, self.addr, self.rank = socket.socket(socket.AF_INET, socket.SOCK_DGRAM), ("127.0.0.1", port), rank
 
-    def send(self, msg):
+    def send(self, *msg):
         try:
-            self.sock.sendto(pickle.dumps(msg), self.addr)
+            self.sock.sendto(pickle.dumps((self.rank, *msg)), self.addr)
         except OSError:
             pass
 
     def reset(self, **kwargs):
         obs, info = self.env.reset(**kwargs)
-        env, self.life = self.env.unwrapped, self.life + 1
+        env, self.score = self.env.unwrapped, 0.0
         lanes = [(*l.start, *l.end, l.width, int(l.line_types[0]), int(l.line_types[1]))
                  for f in env.road.network.graph for t in env.road.network.graph[f] for l in env.road.network.graph[f][t]]
-        self.send(("road", lanes, [tuple(o.position) for o in env.road.objects], self.life))
+        self.send("road", lanes, [tuple(o.position) for o in env.road.objects])
         step, me = env.road.step, env.vehicle
 
         def send_cars(dt):
             step(dt)
             cars = np.array([[c.position[0], c.position[1], c.heading, *(getattr(c, "color", None) or (255, 255, 255))]
                              for c in env.road.vehicles], np.float32)
-            self.send(("cars", cars, me.speed, env.split_x - me.position[0], env.exit_side))
+            self.send("cars", cars, me.speed, env.split_x - me.position[0], env.exit_side)
         env.road.step = send_cars
         return obs, info
 
     def step(self, action):
         result = self.env.step(action)
+        self.score += result[1]
         if result[2] or result[3]:
-            self.send(("end", result[4]["outcome"] or "timed out"))
+            self.send("end", result[4]["outcome"] or "timed out", self.score)
         return result
 
 
 # each road copy runs in its own process, so YOU has to be set in there too or it would be dummydriver.
-# only copy 0 streams to watch.py
-def training_env(rank, port):
+# without the ui there is nothing to stream to, so skip it and save the work
+def training_env(rank, port, stream):
     v.YOU["driver"] = "model"
     env = make_env(max_seconds=v.TRAIN["max_life_seconds"])
-    return Broadcast(env, port) if rank == 0 else env
+    return Broadcast(env, port, rank) if stream else env
 
 
 # prints every 1000 steps and saves checkpoints. exits/crashes are out of the last 100 lives, exits going up = learning
@@ -90,18 +103,18 @@ class Progress(BaseCallback):
         rewards = [e["r"] for e in lives] or [0]
         speed = self.num_timesteps / (time.time() - self.start)
         left = (self.total - self.num_timesteps) / speed / 60
-        print(f"{self.name:>4}: {self.num_timesteps:>7}/{self.total} steps | exits {exits:4.0%} crashes {crashes:4.0%} timeouts {timeouts:4.0%}"
-              f" | avg reward {sum(rewards) / len(rewards):6.2f} (min {min(rewards):6.2f}, max {max(rewards):6.2f})"
-              f" | {self.lives:>6} lives | {speed:5.1f} steps/s | {left:6.1f} min left", flush=True)
+        say(f"{self.name:>4}: {self.num_timesteps:>7}/{self.total} steps | exits {exits:4.0%} crashes {crashes:4.0%} timeouts {timeouts:4.0%}"
+            f" | avg reward {sum(rewards) / len(rewards):6.2f} (min {min(rewards):6.2f}, max {max(rewards):6.2f})"
+            f" | {self.lives:>6} lives | {speed:5.1f} steps/s | {left:6.1f} min left")
         if len(lives) == 100 and exits >= v.TRAIN["goal_exit_rate"]:
-            print(f"{self.name:>4}: hit the goal, {exits:.0%} of the last 100 lives made the exit", flush=True)
+            say(f"{self.name:>4}: hit the goal, {exits:.0%} of the last 100 lives made the exit")
             return False
         return True
 
 
-def train(name, port, steps):
+def train(name, port, steps, stream):
     algo = getattr(importlib.import_module(v.MODEL["library"]), name)
-    env = VecMonitor(SubprocVecEnv([partial(training_env, i, port) for i in range(v.TRAIN["envs"])]), info_keywords=("outcome",))
+    env = VecMonitor(SubprocVecEnv([partial(training_env, i, port, stream) for i in range(v.TRAIN["envs"])]), info_keywords=("outcome",))
     env.seed(v.TRAIN["seed"])
     model = algo("MlpPolicy", env, gamma=v.TRAIN["gamma"], seed=v.TRAIN["seed"], policy_kwargs=dict(net_arch=[256, 256]),
                  verbose=0, **v.TRAIN["settings"].get(name, {}))
@@ -109,19 +122,38 @@ def train(name, port, steps):
     out = HERE / v.TRAIN["folder"] / name
     model.save(out)
     env.close()
-    print(f"{name:>4}: done, saved {out}.zip", flush=True)
+    say(f"{name:>4}: done, saved {out}.zip")
 
 
-if __name__ == "__main__":
+# main.py calls this. argv is the extra command line options, like ["--no-ui"]
+def run(argv=None):
     parser = argparse.ArgumentParser()
     parser.add_argument("--models", nargs="+", default=v.TRAIN["models"])
     parser.add_argument("--steps", type=int, default=v.TRAIN["max_steps"])
-    args = parser.parse_args()
+    parser.add_argument("--ui", action=argparse.BooleanOptionalAction, default=None, help="--no-ui for servers")
+    args = parser.parse_args(argv)
+    if args.ui is None:
+        if sys.stdin.isatty():
+            args.ui = input("show the live training window? [Y/n] ").strip().lower() not in ("n", "no")
+        else:
+            args.ui = v.TRAIN["show_ui"]
     (HERE / v.TRAIN["folder"]).mkdir(exist_ok=True)
-    # slightly lower priority so watch.py stays smooth. training only loses what the watcher actually uses
-    os.nice(5)
-    jobs = [Process(target=train, args=(name, v.TRAIN["watch_port"] + k, args.steps)) for k, name in enumerate(args.models)]
+    LOG.write_text("")
+    if args.ui:
+        subprocess.Popen([sys.executable, str(HERE / "watch.py"), "--models", *args.models])
+        # slightly lower priority so the watcher stays smooth. windows doesnt have os.nice, so it just skips this there
+        if hasattr(os, "nice"):
+            os.nice(5)
+    else:
+        say("training without the ui. progress goes here and to " + str(LOG))
+    # port follows the order in TRAIN["models"] so a model trained alone still shows up in its own watch.py panel
+    port = lambda name: v.TRAIN["watch_port"] + (v.TRAIN["models"].index(name) if name in v.TRAIN["models"] else len(v.TRAIN["models"]))
+    jobs = [Process(target=train, args=(name, port(name), args.steps, args.ui)) for name in args.models]
     for job in jobs:
         job.start()
     for job in jobs:
         job.join()
+
+
+if __name__ == "__main__":
+    run()

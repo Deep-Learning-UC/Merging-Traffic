@@ -4,13 +4,11 @@ from pathlib import Path
 
 import variables as v
 from environment import make_env
-from main import ask_model, load_model
+from main import ask_model, load_model, play
 
 HERE = Path(__file__).resolve().parent
 # training used seeds near TRAIN["seed"]. these are far away so nobody gets tested on a road it trained on
 FIRST_SEED = 10_000
-# same as the test. a total pileup can block every lane forever
-MAX_STEPS = 300
 
 
 def score(driver):
@@ -25,11 +23,7 @@ def score(driver):
     outcomes, exit_times, rewards = Counter(), [], []
     for i in range(v.TRAIN["eval_episodes"]):
         obs, _ = env.reset(seed=FIRST_SEED + i)
-        done, steps, total = False, 0, 0.0
-        while not done and steps < MAX_STEPS:
-            obs, reward, done, _, _ = env.step(ask_model(model, obs)[0])
-            steps, total = steps + 1, total + reward
-        out = env.outcome() or "stuck"
+        out, steps, total = play(env, obs, lambda o: ask_model(model, o)[0])
         outcomes[out] += 1
         rewards.append(total)
         if out == "made exit":

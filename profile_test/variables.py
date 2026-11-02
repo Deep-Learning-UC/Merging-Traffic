@@ -1,6 +1,6 @@
 YOU = {
     "personality": "normal",  # "random" or a personality name like "slow"
-    "driver": "dummydriver",  # "dummydriver" (Driver rules in environment.py) or "model" (MODEL below)
+    "driver": "model",  # "dummydriver" (Driver rules in environment.py) or "model" (MODEL below)
     "start_speed": 22,  # m/s
     "model_speeds": [0, 5, 10, 15, 20, 25, 30, 35],  # m/s the model can pick between with faster/slower. 0 lets it stop and wait
     "cars_seen": 8,  # how many nearby cars the model sees, in front and behind
@@ -92,8 +92,8 @@ LANES = {
 }
 
 TRAFFIC = {
-    "min_cars": 15,
-    "max_cars": 40,
+    "density": (8, 20),  # (min, max) cars per km per lane, random each episode. kept steady around you the whole drive
+    "around_you": (120, 220),  # m behind and ahead of you where traffic is kept. cars further away either way get removed
     "exit_chance": 0.3,  # share of traffic that also takes the exit
     "spawn_spacing": 20,  # m
     "spawn_speed": 22,  # m/s, same for everyone so nobody rear ends at spawn
@@ -112,10 +112,16 @@ REWARDS = {
     "crash": -5,
     "made_exit": 3,
     "missed_exit": -1,
-    "speed": 0.2,  # max per step
-    "speed_range": (0, 30),  # m/s. bonus goes from 0 to full across this range, so every bit of speed counts
+    "caused_crash": -3,  # for every other car that wrecks within 30 m of you
+    "good_speed": (18, 32),  # m/s. about 40 to 72 mph
+    "speed": 0.2,  # per second while inside good_speed
+    "off_speed": -0.03,  # per second for every m/s too slow or too fast. too slow is free if something is right in front of you
     "lane_change": -0.05,  # per lane change
-    "stopped": -0.02,  # per second while barely moving (under 2 m/s). small, just enough that it keeps up with traffic
+    "on_ramp": -0.01,  # times seconds spent on the on ramp, every second. grows the longer you stay so it merges instead of hitting the end
+    "progress": 0.005,  # per meter driven toward the exit. a learning hint so it knows its getting closer
+    "wrong_lane": -0.05,  # per second for each lane you are away from the exit lane, once the exit is close
+    "wrong_lane_within": 400,  # m before the exit where wrong_lane starts counting
+    "stopped_ok_within": 25,  # m. if a car or the ramp block is this close in front, going slow is free. waiting your turn is fine
     "per_second": -0.02,  # every second costs a bit so parking is bad. a full timeout (-2.4) still has to cost less than a crash
 }
 
@@ -136,6 +142,7 @@ MODEL = {
 }
 
 TRAIN = {
+    "show_ui": False,  # only used when train.py cant ask you (like a server). True = open the watcher, False = no window, fastest
     "models": ["DQN", "PPO", "A2C"],  # train.py trains these at the same time, evaluate.py scores them
     "max_steps": 300_000,  # per model. training stops here even if it never hits the goal
     "goal_exit_rate": 0.9,  # stops early once this share of the last 100 lives made the exit
@@ -152,7 +159,7 @@ TRAIN = {
         "DQN": {"learning_rate": 5e-4, "buffer_size": 50_000, "learning_starts": 1000, "batch_size": 64,
                 "target_update_interval": 500, "exploration_fraction": 0.3},
         "PPO": {"learning_rate": 3e-4, "n_steps": 256, "batch_size": 64},
-        "A2C": {"learning_rate": 7e-4},
+        "A2C": {"learning_rate": 3e-4, "n_steps": 16, "ent_coef": 0.01},  # ent_coef keeps it exploring. without it A2C locked into crashing
     },
 }
 

@@ -3,10 +3,9 @@ from collections import Counter
 
 import variables as v
 from environment import make_env
+from main import play
 
 OUTCOMES = {"made exit", "missed exit", "crashed", "stuck"}
-# the env has no time limit. but a total pileup can block every lane forever, so the test calls that "stuck" and moves on
-MAX_STEPS = 300
 
 
 # plays full episodes and collects outcomes and speeds
@@ -15,13 +14,12 @@ def run(seeds, you="random"):
     env, results = make_env(), []
     speeds, lane_speeds = {k: [] for k in v.PERSONALITIES}, {"left": [], "right": []}
     for s in seeds:
-        env.reset(seed=s)
+        obs, _ = env.reset(seed=s)
         info = {"lanes": env.lanes, "cars": len(env.road.vehicles) - 1, "me": env.vehicle.personality,
                 "side": env.exit_side, "length": round(env.split_x)}
-        done, steps = False, 0
-        while not done and steps < MAX_STEPS:
-            _, _, done, _, _ = env.step(1)
-            steps += 1
+
+        # wrecks dont count, theyre just obstacles now
+        def collect(env):
             for car in env.road.vehicles[1:]:
                 if car.crashed:
                     continue
@@ -29,7 +27,7 @@ def run(seeds, you="random"):
                 f, t, i = car.lane_index
                 if (f, t) == ("b", "c") and i in (0, env.lanes - 1):
                     lane_speeds["left" if i == 0 else "right"].append((car.target_speed, car.speed))
-        info["out"] = env.outcome() or "stuck"
+        info["out"] = play(env, obs, lambda o: 1, collect)[0]
         results.append(info)
     return results, speeds, lane_speeds
 
@@ -42,7 +40,7 @@ def avg(xs):
 def main():
     results, speeds, lane_speeds = run(range(12))
     for r in results:
-        assert v.ROAD["lanes"][0] <= r["lanes"] <= v.ROAD["lanes"][1] and r["cars"] <= v.TRAFFIC["max_cars"]
+        assert v.ROAD["lanes"][0] <= r["lanes"] <= v.ROAD["lanes"][1]
         assert r["out"] in OUTCOMES
         print(f"{r['lanes']} lanes, {r['cars']:2} cars, {r['side']:5} exit, you = {r['me']:6} -> {r['out']}")
     assert len({r["length"] for r in results}) > 1, "road never changed"
