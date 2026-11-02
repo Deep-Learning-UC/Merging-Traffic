@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.28 (MiKTeX 25.12) (preloaded format=pdflatex 2026.10.31)  1 NOV 2026 08:44
+This is pdfTeX, Version 3.141592653-2.6-1.40.28 (MiKTeX 25.12) (preloaded format=pdflatex 2026.10.31)  2 NOV 2026 12:14
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -230,10 +230,12 @@ Package xcolor Info: Model `tHsb' substituted by `hsb' on input line 1369.
 Package xcolor Info: Model `HSB' substituted by `hsb' on input line 1370.
 Package xcolor Info: Model `Gray' substituted by `gray' on input line 1371.
 Package xcolor Info: Model `wave' substituted by `hsb' on input line 1372.
-) (C:\Users\conno\AppData\Local\Programs\MiKTeX\tex/latex/url\url.sty
+) (C:\Users\conno\AppData\Local\Programs\MiKTeX\tex/latex/xurl\xurl.sty
+Package: xurl 2022/01/09 v 0.10 modify URL breaks
+ (C:\Users\conno\AppData\Local\Programs\MiKTeX\tex/latex/url\url.sty
 \Urlmuskip=\muskip18
 Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
-) (C:\Users\conno\AppData\Local\Programs\MiKTeX\tex/latex/l3backend\l3backend-pdftex.def
+)) (C:\Users\conno\AppData\Local\Programs\MiKTeX\tex/latex/l3backend\l3backend-pdftex.def
 File: l3backend-pdftex.def 2025-10-09 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count306
 ) (MergingTraffic.aux)
@@ -282,9 +284,23 @@ File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 LaTeX Font Info:    Trying to load font information for U+msb on input line 54.
  (C:\Users\conno\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
-)
-Underfull \vbox (badness 1242) has occurred while \output is active []
+) [1{C:/Users/conno/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}{C:/Users/conno/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/base/8r.enc}
 
+
+]
+Underfull \hbox (badness 10000) in paragraph at lines 113--115
+[]\OT1/ptm/m/n/10 TODO - ppo+ do we have to cite mu-joco -
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 113--115
+\OT1/ptm/m/n/10 https://ieeexplore.ieee.org/abstract/document/6386109
+ []
+
+
+Underfull \hbox (badness 5105) in paragraph at lines 122--123
+\OT1/ptm/m/n/8 ``Prox-i-mal Pol-icy Op-ti-miza-tion Al-go-rithms,'' arXiv, Aug. 2017,
+ []
 
 
 ** Conference Paper **
@@ -297,8 +313,7 @@ Before submitting the final camera ready copy, remember to:
  uses only Type 1 fonts and that every step in the generation
  process uses the appropriate paper size.
 
-[1{C:/Users/conno/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}{C:/Users/conno/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/base/8r.enc}
-
+[2
 
 ] (MergingTraffic.aux)
  ***********
@@ -307,17 +322,17 @@ L3 programming layer <2025-12-24>
  ***********
  ) 
 Here is how much of TeX's memory you used:
- 4277 strings out of 467871
- 67501 string characters out of 5418375
- 490525 words of memory out of 5000000
- 33119 multiletter control sequences out of 15000+600000
+ 4305 strings out of 467871
+ 68140 string characters out of 5418375
+ 490844 words of memory out of 5000000
+ 33143 multiletter control sequences out of 15000+600000
  664104 words of font info for 120 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 57i,11n,65p,457b,350s stack positions out of 10000i,1000n,20000p,200000b,200000s
-<C:/Users/conno/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi10.pfb><C:/Users/conno/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi8.pfb><C:/Users/conno/AppData/Local/Programs/MiKTeX/fonts/type1/urw/times/utmr8a.pfb><C:/Users/conno/AppData/Local/Programs/MiKTeX/fonts/type1/urw/times/utmri8a.pfb>
-Output written on MergingTraffic.pdf (1 page, 59284 bytes).
+ 57i,11n,65p,457b,461s stack positions out of 10000i,1000n,20000p,200000b,200000s
+<C:/Users/conno/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi8.pfb><C:/Users/conno/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Users/conno/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/conno/AppData/Local/Programs/MiKTeX/fonts/type1/urw/times/utmr8a.pfb><C:/Users/conno/AppData/Local/Programs/MiKTeX/fonts/type1/urw/times/utmri8a.pfb>
+Output written on MergingTraffic.pdf (2 pages, 70969 bytes).
 PDF statistics:
- 27 PDF objects out of 1000 (max. 8388607)
+ 35 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 

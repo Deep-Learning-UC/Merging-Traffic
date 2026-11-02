@@ -8,7 +8,7 @@
 \usepackage{graphicx}
 \usepackage{textcomp}
 \usepackage{xcolor}
-\usepackage{url}
+\usepackage{xurl}
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
@@ -75,12 +75,6 @@ modification of the popular ``gymnasium'' python package that contains tools for
 for DRL or RL model training. ``highway-env'' contains many pre-designed driving environments (straight highway, 
 racetrack, parking, etc.), and ours will be a modification of the ``merge-v1'' environment. 
 
-Example of citation \cite{b1}
-
-
-example of ellipses $\ldots$
-
-
 \section{Related Studies}
 \textit{This section should demonstrate a thorough understanding of the existing work in your field. You
 are required to review at least five state-of-the-art models that are closely related to your project.
@@ -92,14 +86,45 @@ and briefly mention any notable strengths or weaknesses. The discussion should n
 summarize but also critically analyze how these existing models have informed your own project.
 Highlight how your approach builds upon or deviates from these studies}
 
+
+The first model we reviewed was PPO+ \cite{b1}, created by M. Kallel, J. Holgado-Alvarez, S. Tosatto,
+and C. D'Eramo. PPO+ is an implementation of Proximal Policy Optimization (PPO) \cite{b2} that improves 
+some of the shortcomings of PPO, taking inspiration from off-policy actor-critic models such as 
+SAC \cite{b3}. PPO is a popular on-policy models created by J. Schulman, F. Wolski, P. Dhariwal, A. Radford, 
+and O. Klimov. PPO utilizes actor and critic networks to find the optimal policy directly, first by 
+using the current policy to iterate over some number of environment steps, using the critic network to 
+compute the advantage for each action, and to compute the policy losses through mini batches of the 
+samples collected in the previous environment to update the actor and critic networks. 
+Specifically, PPO+ aims to: 1) improve the accuracy of the critic network of PPO, 2) bound the action spaces,
+and 3) provide entropy regularization. To address the critic accuracy, PPO+ implements a replay buffer 
+to store past policy information to supplement the training of the critic network (instead of just using current policy information).
+This makes critic training off-policy, but maintains the core requirement of the actor network being on-policy. 
+For bounding the action spaces, PPO+ utilizes a hyperbolic tangent when computing the log 
+probabibilities of the policies while applying corrections for when the action value diverges at $\pm 1$. 
+For performance, PPO+ in the MuJoCo dataset performs above average in total policy return compared with PPO \cite{b2}, SAC \cite{b3}, and TRPO \cite{b4}, 
+and laregely outperforms those same models in the DOG environment of the Deepmind Control Suite. 
+And to address entropy regularization, PPO+ adds an entropy term in the computation of the avantage. 
+PPO+'s strengths include general strengths for on-policy models, such as stable learning and safer exploration, 
+and improvements to PPO (the dominant on-policy model) such as a more accurate critic, bounding the policy 
+distribution and maximizing entropy exploration. 
+PPO+, suffers from similar weaknesses as to other on-policy models such as poor sample efficiency. 
+
+
+TODO - ppo+ do we have to cite mujoco - https://ieeexplore.ieee.org/abstract/document/6386109
+deepmind control suite - https://arxiv.org/abs/1801.00690
+
+TODO (after 5 models): highlight how our own approachs builds/deviates from these studies
+
 TODO: DOUBLE CHECK IEEE CITATION FORMAT
 
 \begin{thebibliography}{00}
 \bibitem{b1} M. Kallel, J. Holgado-Alvarez, S. Tosatto, and C. D'Eramo, ``PPO+: Enhancing proximal policy optimization,'' Reinforcement Learning Journal, 2026. [Online]. Available: \url{https://rlj.cs.umass.edu/2026/papers/Paper8.pdf}
-\bibitem{b2} H. Wang and M. Yang, ``ExO-PPO: an Extended Off-policy Proximal Policy Optimization Algorithm,'' School of Aeronautics and Astronautics Organization, Feb. 2026, arXiv:2602.09726. [Online]. Available: \url{https://arxiv.org/pdf/2602.09726}
-\bibitem{b3} Y. Tang, M. Rowland, R. Munos, B. Avila Pires, and W. Dabney, ``Off-policy Distributional Q($\lambda$): Distributional RL Without Importance Sampling,'' 29th International Conference of AISTATS, vol. 300, 2026. [Online]. Available: \url{https://raw.githubusercontent.com/mlresearch/v300/main/assets/tang26a/tang26a.pdf}
-\bibitem{b4} A. Oberai, S. Park, S. Levine, ``Reversal Q-Learning,'' University of California, Berkeley, June 2026, arXiv:2606.17551. [Online]. Availalbe: \url{https://arxiv.org/pdf/2606.17551}
-\bibitem{b5} H. Lee, et al. ``SIMBA: SIMPLICITY BIAS FOR SCALING UP PARAMETERS IN DEEP REINFORCEMENT LEARNING,'' ICLR, 2025, arXiv:2410.09754. [Online]. Available: \url{https://arxiv.org/pdf/2410.09754}
+\bibitem{b2} J. Schulman, F. Wolski, P. Dhariwal, A. Radford, and O. Klimov, ``Proximal Policy Optimization Algorithms,'' arXiv, Aug. 2017, arXiv:1707.06347. [Online]. Available: \url{https://arxiv.org/pdf/1707.06347}
+\bibitem{b3} T. Haarnoja, A. Zhou, P. Abbeel, and S. Levine, ``Soft Actor-Critic: Off-Policy Maximum Entropy Deep Reinforcement Learning with a Stochastic Actor,'' Berkeley Artificial Intelligence Research, University of California, Berkeley, Aug. 2018, arXiv:1801.01290. [Online]. Available: \url{https://arxiv.org/pdf/1801.01290}
+\bibitem{b4} J. Schulman, S. Levine, P. Moritz, M. Jordan, and P. Abbee, ``Trust Region Policy Optimization,'' Proceedings of the 31st International Conference on Machine Learning, Apr. 2017, arXiv:1502.05477. [Online]. Available: \url{https://arxiv.org/pdf/1502.05477}
+\bibitem{b5} H. Wang and M. Yang, ``ExO-PPO: an Extended Off-policy Proximal Policy Optimization Algorithm,'' School of Aeronautics and Astronautics Organization, Feb. 2026, arXiv:2602.09726. [Online]. Available: \url{https://arxiv.org/pdf/2602.09726}
+\bibitem{b6} Y. Tang, M. Rowland, R. Munos, B. Avila Pires, and W. Dabney, ``Off-policy Distributional Q($\lambda$): Distributional RL Without Importance Sampling,'' 29th International Conference of AISTATS, vol. 300, 2026. [Online]. Available: \url{https://raw.githubusercontent.com/mlresearch/v300/main/assets/tang26a/tang26a.pdf}
+\bibitem{b7} A. Oberai, S. Park, S. Levine, ``Reversal Q-Learning,'' University of California, Berkeley, June 2026, arXiv:2606.17551. [Online]. Availalbe: \url{https://arxiv.org/pdf/2606.17551}
+\bibitem{b8} H. Lee, et al. ``SIMBA: SIMPLICITY BIAS FOR SCALING UP PARAMETERS IN DEEP REINFORCEMENT LEARNING,'' ICLR, 2025, arXiv:2410.09754. [Online]. Available: \url{https://arxiv.org/pdf/2410.09754}
 \end{thebibliography}
-
 \end{document}
