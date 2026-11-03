@@ -3,3 +3,4 @@
 videos/*
 __pycache__/
 __pycache__/*
+profile_test/trained/training_log.txt
