@@ -21,11 +21,11 @@
 \textit{University of Cincinnati}\\
 slutskcp@mail.uc.edu}
 \and
-\IEEEauthorblockN{2\textsuperscript{nd} Given Name Surname}
-\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
-\textit{name of organization (of Aff.)}\\
-\textit{name of organization (of Aff.)}\\
-email address or ORCID}
+\IEEEauthorblockN{Eli Fouts}
+\IEEEauthorblockA{\textit{Fifth-Year Computer Science Major}\\
+\textit{College of Engineering and Applied Sciences}\\
+\textit{University of Cincinnati}\\
+foutseg@mail.uc.edu}
 \and
 \IEEEauthorblockN{3\textsuperscript{rd} Given Name Surname}
 \IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
@@ -127,6 +127,24 @@ TODO (after 5 models): highlight how our own approachs builds/deviates from thes
 
 TODO: DOUBLE CHECK IEEE CITATION FORMAT
 
+\section{Preliminary Benchmarking}
+To get an early baseline, I built a test version of our environment in our ``profile\_test'' folder and
+benchmarked three classic models from Stable-Baselines3: DQN, PPO \cite{b2}, and A2C. Every episode generates
+a random road where the car starts on a ramp, merges into traffic made up of normal, slow, fast, and reckless
+drivers, and then has to take an exit 250 to 500 meters down the road. All three models used discrete actions,
+the same reward function, and the same network size, and each trained for about 300,000 steps. I then scored them
+on the same 30 unseen roads, along with a rule-based driver that follows the same rules as the traffic so that we
+had something to compare against. The rule-based driver made the exit 70\% of the time and crashed 20\% of the
+time. DQN and PPO both made the exit 47\% of the time and crashed the other 53\%, while A2C only made the exit 10\%
+of the time. None of the models have beaten the rule-based driver yet, and since I only trained one seed per model,
+I wouldn't read too much into the differences between them. From here, I think we should move this setup into our
+main environment with the full 1 km road and add the 2026 models, starting with PPO+ \cite{b1} and ExO-PPO \cite{b5}
+since both build on PPO and should hopefully be easier to plug in. Based on Connor's research, we might also run at
+least 5 seeds per model with 50 or more evaluation episodes each, and report the interquartile mean with bootstrapped
+confidence intervals \cite{b13} instead of a single average. We would focus on collision rate and time-to-exit,
+since reward alone can favor a model just because of how we weighted it. We still need to pick one action space for
+the whole benchmark, because my tests use discrete actions while many recent models were built for continuous control.
+
 \begin{thebibliography}{00}
 \bibitem{b1} M. Kallel, J. Holgado-Alvarez, S. Tosatto, and C. D'Eramo, ``PPO+: Enhancing proximal policy optimization,'' Reinforcement Learning Journal, 2026. [Online]. Available: \url{https://rlj.cs.umass.edu/2026/papers/Paper8.pdf}
 \bibitem{b2} J. Schulman, F. Wolski, P. Dhariwal, A. Radford, and O. Klimov, ``Proximal Policy Optimization Algorithms,'' Aug. 2017, arXiv:1707.06347. [Online]. Available: \url{https://arxiv.org/pdf/1707.06347}
@@ -140,5 +158,6 @@ TODO: DOUBLE CHECK IEEE CITATION FORMAT
 \bibitem{b10} Y. Tang, M. Rowland, R. Munos, B. Avila Pires, and W. Dabney, ``Off-policy Distributional Q($\lambda$): Distributional RL Without Importance Sampling,'' 29th International Conference of AISTATS, vol. 300, 2026. [Online]. Available: \url{https://raw.githubusercontent.com/mlresearch/v300/main/assets/tang26a/tang26a.pdf}
 \bibitem{b11} A. Oberai, S. Park, S. Levine, ``Reversal Q-Learning,'' University of California, Berkeley, June 2026, arXiv:2606.17551. [Online]. Availalbe: \url{https://arxiv.org/pdf/2606.17551}
 \bibitem{b12} H. Lee, et al. ``SIMBA: SIMPLICITY BIAS FOR SCALING UP PARAMETERS IN DEEP REINFORCEMENT LEARNING,'' ICLR, 2025, arXiv:2410.09754. [Online]. Available: \url{https://arxiv.org/pdf/2410.09754}
+\bibitem{b13} R. Agarwal, M. Schwarzer, P. S. Castro, A. Courville, and M. G. Bellemare, ``Deep Reinforcement Learning at the Edge of the Statistical Precipice,'' 35th Conference on Neural Information Processing Systems, 2021, arXiv:2108.13264. [Online]. Available: \url{https://arxiv.org/pdf/2108.13264}
 \end{thebibliography}
 \end{document}
