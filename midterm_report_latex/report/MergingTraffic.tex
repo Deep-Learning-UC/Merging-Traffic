@@ -33,37 +33,30 @@ foutseg@mail.uc.edu}
 \textit{University of Cincinnati}\\
 shah3ao@mail.uc.edu}
 \and
-\IEEEauthorblockN{4\textsuperscript{th} Given Name Surname}
-\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
-\textit{name of organization (of Aff.)}\\
-\textit{name of organization (of Aff.)}\\
-email address or ORCID}
+\IEEEauthorblockN{Abhishek Rautela}
+\IEEEauthorblockA{\textit{Fifth-Year Computer Science Major}\\
+\textit{College of Engineering and Applied Sciences}\\
+\textit{University of Cincinnati}\\
+rautelak@mail.uc.edu}
 \and
-\IEEEauthorblockN{5\textsuperscript{th} Given Name Surname}
-\IEEEauthorblockA{\textit{dept. name of organization (of Aff.)} \\
-\textit{name of organization (of Aff.)}\\
-\textit{name of organization (of Aff.)}\\
-email address or ORCID}
+\IEEEauthorblockN{Jace Schubert}
+\IEEEauthorblockA{\textit{Fifth-Year Computer Science Major}\\
+\textit{College of Engineering and Applied Sciences}\\
+\textit{University of Cincinnati}\\
+schubejb@mail.uc.edu}
 }
 
 \maketitle
 
 
 \section{Background}
-\textit{In this section, provide a comprehensive overview of the problem or challenge your project
-addresses. Include the motivation behind selecting this topic, its relevance to the field, and any
-specific issues that your project seeks to resolve. Be sure to clearly define any terminology that is
-specific to your area of research. This section sets the stage for the entire report, so ensure it's clear
-and well-structured.}
-
 Our project seeks to identify a Deep Reinforcement Learning (DRL) model that is best suited to 
 equip a car to merge onto and off of a highway. We were seeking to explore a topic in the realm of 
 automated driving, and after some deliberation and exploration settled on specifically the act of merging
 onto and off of a highway. As drivers, many of us faced initial difficulty with this driving skill, so we
 thought it would be intriguing to explore how well DRL models would fare. We also considered it potentially
 challenging, such that it would be suitable for our Deep Learning class project. From our current research,
-we have yet to find anything that explores similar questions or tasks (TODO: DO A LITTLE 
-MORE RESEARCH TO FIND IF THERE ARE ANY EXISTING PAPERS ON MERGING??????).
+we have yet to find anything that explores similar questions or tasks.
 
 Our tool to simulate the highway environment will be the ``highway-env'' python package. This package is a 
 modification of the popular ``gymnasium'' python package that contains tools for building environments suitable
@@ -71,17 +64,6 @@ for DRL or RL model training. ``highway-env'' contains many pre-designed driving
 racetrack, parking, etc.), and ours will be a modification of the ``merge-v1'' environment. 
 
 \section{Related Studies}
-\textit{This section should demonstrate a thorough understanding of the existing work in your field. You
-are required to review at least five state-of-the-art models that are closely related to your project.
-For each paper, include the following: Model Name and Authors: Cite the paper and mention the
-model's creators. Methodology: Summarize the key techniques or algorithms used in the model.
-Focus on how these models approach the problem at hand. Performance: Provide a comparison of
-each model's performance based on standard benchmarks (e.g., accuracy, precision, recall, etc.)
-and briefly mention any notable strengths or weaknesses. The discussion should not only
-summarize but also critically analyze how these existing models have informed your own project.
-Highlight how your approach builds upon or deviates from these studies}
-
-
 The first model we reviewed was PPO+ \cite{b1}, created by M. Kallel, J. Holgado-Alvarez, S. Tosatto,
 and C. D'Eramo. PPO+ is an implementation of Proximal Policy Optimization (PPO) \cite{b2} that improves 
 some of the shortcomings of PPO, taking inspiration from off-policy actor-critic models such as 
@@ -104,7 +86,7 @@ and improvements to PPO (the dominant on-policy model \cite{b1}) such as a more 
 distribution and maximizing entropy exploration \cite{b1}. 
 PPO+ suffers from similar weaknesses as to other on-policy models such as poor sample efficiency \cite{b1}. 
 
-The second model we considered was Extended Off-policy Proximal Policy Optimization (ExO-PPO), 
+The second model we reviewed was Extended Off-policy Proximal Policy Optimization (ExO-PPO), 
 developed by H. Wang and M. Yang \cite{b5}. ExO-PPO is another implementation of PPO \cite{b2}, that also implements 
 limited off-policy training to supplement the on-policy training of PPO \cite{b5}. ExO-PPO specifically seeks to balance 
 sample efficiency (inspired by off-policy methods), and stability (one of the core benefits of PPO) \cite{b5}. 
@@ -118,7 +100,7 @@ Gymnasium environment \cite{b5}, and outperforms the same models + off-policy re
 off-policy learning, and optimized gradients, but ExO-PPO also suffers a sensitivity to hyperparameters, 
 as does PPO \cite{b5}. 
 
-The third model we considered was Off-policy Distributional Q($\lambda$), developed by Y. Tang, M. Rowland, R. Munos, B. Avila Pires, and W. Dabney \cite{b10}. Off-policy Distributional Q($\lambda$) is an extension of traditional Q($\lambda$) learning that incorporates distributional reinforcement learning \cite{b10}. Unlike traditional Q-learning methods that estimate the expected reward of an action, distributional reinforcement learning estimates the entire distribution of possible future rewards \cite{b10}. The model aims to improve multi-step off-policy learning without using importance sampling, which is commonly used to correct differences between the policy collecting experiences and the policy being trained, but can introduce high variance \cite{b10}. Specifically, Off-policy Distributional Q($\lambda$) aims to: 1) improve learning efficiency through multi-step updates \cite{b10}, 2) eliminate the need for importance sampling in off-policy learning \cite{b10}, and 3) maintain stable learning by controlling the difference between the behavior policy and target policy \cite{b10}. To accomplish this, the model uses a trace parameter $\lambda$ to control how much information from previous steps contributes to learning \cite{b10}. It also introduces signed measures, which allow intermediate return estimates to contain negative probability masses while maintaining a total mass of one \cite{b10}. For its deep reinforcement learning implementation, the authors combine the approach with the C51 algorithm to create Q($\lambda$)-C51, which uses a neural network to estimate return distributions \cite{b10}. The model also introduces a mixing coefficient $\alpha$ to combine the greedy target policy with the behavior policy, helping improve training stability \cite{b10}. For performance, Q($\lambda$)-C51 was evaluated on 57 Atari games and compared against C51 and distributional Retrace-C51 \cite{b10}. With $\lambda = 0.4$ and $\alpha = 0.6$, Q($\lambda$)-C51 achieved higher interquartile mean and median normalized scores than both baseline models over the course of training \cite{b10}. The model's strengths include improved multi-step learning, the ability to reuse previously collected experiences, and avoiding the high variance associated with importance sampling \cite{b10}. However, Off-policy Distributional Q($\lambda$) is sensitive to hyperparameter selection, particularly the value of $\lambda$, as larger values can lead to unstable learning or divergence when the behavior and target policies differ significantly \cite{b10}.
+The third model we reviewed was Off-policy Distributional Q($\lambda$), developed by Y. Tang, M. Rowland, R. Munos, B. Avila Pires, and W. Dabney \cite{b10}. Off-policy Distributional Q($\lambda$) is an extension of traditional Q($\lambda$) learning that incorporates distributional reinforcement learning \cite{b10}. Unlike traditional Q-learning methods that estimate the expected reward of an action, distributional reinforcement learning estimates the entire distribution of possible future rewards \cite{b10}. The model aims to improve multi-step off-policy learning without using importance sampling, which is commonly used to correct differences between the policy collecting experiences and the policy being trained, but can introduce high variance \cite{b10}. Specifically, Off-policy Distributional Q($\lambda$) aims to: 1) improve learning efficiency through multi-step updates \cite{b10}, 2) eliminate the need for importance sampling in off-policy learning \cite{b10}, and 3) maintain stable learning by controlling the difference between the behavior policy and target policy \cite{b10}. To accomplish this, the model uses a trace parameter $\lambda$ to control how much information from previous steps contributes to learning \cite{b10}. It also introduces signed measures, which allow intermediate return estimates to contain negative probability masses while maintaining a total mass of one \cite{b10}. For its deep reinforcement learning implementation, the authors combine the approach with the C51 algorithm to create Q($\lambda$)-C51, which uses a neural network to estimate return distributions \cite{b10}. The model also introduces a mixing coefficient $\alpha$ to combine the greedy target policy with the behavior policy, helping improve training stability \cite{b10}. For performance, Q($\lambda$)-C51 was evaluated on 57 Atari games and compared against C51 and distributional Retrace-C51 \cite{b10}. With $\lambda = 0.4$ and $\alpha = 0.6$, Q($\lambda$)-C51 achieved higher interquartile mean and median normalized scores than both baseline models over the course of training \cite{b10}. The model's strengths include improved multi-step learning, the ability to reuse previously collected experiences, and avoiding the high variance associated with importance sampling \cite{b10}. However, Off-policy Distributional Q($\lambda$) is sensitive to hyperparameter selection, particularly the value of $\lambda$, as larger values can lead to unstable learning or divergence when the behavior and target policies differ significantly \cite{b10}.
 
 The fourth model we reviewed was Reversal Q-Learning (RQL) \cite{b11}, developed by A. Oberai, S. Park, and
 S. Levine. RQL is an off-policy reinforcement learning algorithm designed to train highly expressive, continuous
@@ -160,22 +142,22 @@ tasks, and the reviewed experiments did not include driving tasks such as highwa
 project can explore.
 
 \section{Preliminary Benchmarking}
-To get an early baseline, I built a test version of our environment in our ``profile\_test'' folder and
+To get an early baseline, we built a test version of our environment in our ``profile\_test'' folder and
 benchmarked three classic models from Stable-Baselines3: DQN, PPO \cite{b2}, and A2C. Every episode generates
 a random road where the car starts on a ramp, merges into traffic made up of normal, slow, fast, and reckless
 drivers, and then has to take an exit 250 to 500 meters down the road. All three models used discrete actions,
-the same reward function, and the same network size, and each trained for about 300,000 steps. I then scored them
+the same reward function, and the same network size, and each trained for about 300,000 steps. We then scored them
 on the same 30 unseen roads, along with a rule-based driver that follows the same rules as the traffic so that we
 had something to compare against. The rule-based driver made the exit 70\% of the time and crashed 20\% of the
 time. DQN and PPO both made the exit 47\% of the time and crashed the other 53\%, while A2C only made the exit 10\%
-of the time. None of the models have beaten the rule-based driver yet, and since I only trained one seed per model,
-I wouldn't read too much into the differences between them. From here, I think we should move this setup into our
+of the time. None of the models have beaten the rule-based driver yet, and since we only trained one seed per model,
+we would not read too much into the differences between them. From here, we plan to move this setup into our
 main environment with the full 1 km road and add the 2026 models, starting with PPO+ \cite{b1} and ExO-PPO \cite{b5}
-since both build on PPO and should hopefully be easier to plug in. Based on Connor's research, we might also run at
+since both build on PPO and should hopefully be easier to plug in. We also plan to run at
 least 5 seeds per model with 50 or more evaluation episodes each, and report the interquartile mean with bootstrapped
 confidence intervals \cite{b13} instead of a single average. We would focus on collision rate and time-to-exit,
 since reward alone can favor a model just because of how we weighted it. We still need to pick one action space for
-the whole benchmark, because my tests use discrete actions while many recent models were built for continuous control.
+the whole benchmark, because our tests use discrete actions while many recent models were built for continuous control.
 
 \begin{thebibliography}{00}
 \bibitem{b1} M. Kallel, J. Holgado-Alvarez, S. Tosatto, and C. D'Eramo, ``PPO+: Enhancing proximal policy optimization,'' Reinforcement Learning Journal, 2026. [Online]. Available: \url{https://rlj.cs.umass.edu/2026/papers/Paper8.pdf}
