@@ -11,38 +11,46 @@
 \usepackage{xurl}
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\makeatletter
+\newcommand{\linebreakand}{%
+  \end{@IEEEauthorhalign}
+  \hfill\mbox{}\par
+  \mbox{}\hfill
+  \begin{@IEEEauthorhalign}
+}
+\makeatother
 \begin{document}
 
 \title{Merging Traffic: Benchmark of Deep Reinforcement Learning Models}
 
 \author{\IEEEauthorblockN{Connor Slutsky}
-\IEEEauthorblockA{\textit{Fourth-Year Computer Science Major}\\
-\textit{College of Engineering and Applied Sciences}\\
+\IEEEauthorblockA{\textit{College of Eng. and Applied Sci.} \\
 \textit{University of Cincinnati}\\
+Cincinnati, USA \\
 slutskcp@mail.uc.edu}
 \and
 \IEEEauthorblockN{Eli Fouts}
-\IEEEauthorblockA{\textit{Fifth-Year Computer Science Major}\\
-\textit{College of Engineering and Applied Sciences}\\
+\IEEEauthorblockA{\textit{College of Eng. and Applied Sci.} \\
 \textit{University of Cincinnati}\\
+Cincinnati, USA \\
 foutseg@mail.uc.edu}
 \and
 \IEEEauthorblockN{Aarohi Shah}
-\IEEEauthorblockA{\textit{Fifth-Year Computer Science Major} \\
-\textit{College of Engineering and Applied Sciences}\\
+\IEEEauthorblockA{\textit{College of Eng. and Applied Sci.} \\
 \textit{University of Cincinnati}\\
+Cincinnati, USA \\
 shah3ao@mail.uc.edu}
-\and
+\linebreakand
 \IEEEauthorblockN{Abhishek Rautela}
-\IEEEauthorblockA{\textit{Fifth-Year Computer Science Major}\\
-\textit{College of Engineering and Applied Sciences}\\
+\IEEEauthorblockA{\textit{College of Eng. and Applied Sci.} \\
 \textit{University of Cincinnati}\\
+Cincinnati, USA \\
 rautelak@mail.uc.edu}
 \and
 \IEEEauthorblockN{Jace Schubert}
-\IEEEauthorblockA{\textit{Fifth-Year Computer Science Major}\\
-\textit{College of Engineering and Applied Sciences}\\
+\IEEEauthorblockA{\textit{College of Eng. and Applied Sci.} \\
 \textit{University of Cincinnati}\\
+Cincinnati, USA \\
 schubejb@mail.uc.edu}
 }
 
