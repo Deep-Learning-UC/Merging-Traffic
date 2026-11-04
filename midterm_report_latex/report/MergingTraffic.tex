@@ -120,16 +120,7 @@ as does PPO \cite{b5}.
 
 The third model we considered was Off-policy Distributional Q($\lambda$), developed by Y. Tang, M. Rowland, R. Munos, B. Avila Pires, and W. Dabney \cite{b10}. Off-policy Distributional Q($\lambda$) is an extension of traditional Q($\lambda$) learning that incorporates distributional reinforcement learning \cite{b10}. Unlike traditional Q-learning methods that estimate the expected reward of an action, distributional reinforcement learning estimates the entire distribution of possible future rewards \cite{b10}. The model aims to improve multi-step off-policy learning without using importance sampling, which is commonly used to correct differences between the policy collecting experiences and the policy being trained, but can introduce high variance \cite{b10}. Specifically, Off-policy Distributional Q($\lambda$) aims to: 1) improve learning efficiency through multi-step updates \cite{b10}, 2) eliminate the need for importance sampling in off-policy learning \cite{b10}, and 3) maintain stable learning by controlling the difference between the behavior policy and target policy \cite{b10}. To accomplish this, the model uses a trace parameter $\lambda$ to control how much information from previous steps contributes to learning \cite{b10}. It also introduces signed measures, which allow intermediate return estimates to contain negative probability masses while maintaining a total mass of one \cite{b10}. For its deep reinforcement learning implementation, the authors combine the approach with the C51 algorithm to create Q($\lambda$)-C51, which uses a neural network to estimate return distributions \cite{b10}. The model also introduces a mixing coefficient $\alpha$ to combine the greedy target policy with the behavior policy, helping improve training stability \cite{b10}. For performance, Q($\lambda$)-C51 was evaluated on 57 Atari games and compared against C51 and distributional Retrace-C51 \cite{b10}. With $\lambda = 0.4$ and $\alpha = 0.6$, Q($\lambda$)-C51 achieved higher interquartile mean and median normalized scores than both baseline models over the course of training \cite{b10}. The model's strengths include improved multi-step learning, the ability to reuse previously collected experiences, and avoiding the high variance associated with importance sampling \cite{b10}. However, Off-policy Distributional Q($\lambda$) is sensitive to hyperparameter selection, particularly the value of $\lambda$, as larger values can lead to unstable learning or divergence when the behavior and target policies differ significantly \cite{b10}.
 
-TODO - exo-ppo cite openapi gym/atai env?
-
-TODO ppo+ do we have to cite mujoco - https://ieeexplore.ieee.org/abstract/document/6386109
-deepmind control suite - https://arxiv.org/abs/1801.00690
-
-TODO (after 5 models): highlight how our own approachs builds/deviates from these studies
-
-TODO: DOUBLE CHECK IEEE CITATION FORMAT
-
-The third model we reviewed was Reversal Q-Learning (RQL) \cite{b11}, developed by A. Oberai, S. Park, and
+The fourth model we reviewed was Reversal Q-Learning (RQL) \cite{b11}, developed by A. Oberai, S. Park, and
 S. Levine. RQL is an off-policy reinforcement learning algorithm designed to train highly expressive, continuous
 flow-based policies from offline datasets without requiring unstable backpropagation through time (BPTT) or
 resorting to one-step policy distillation \cite{b11}. The intent of RQL is to overcome the difficulty of performing
@@ -145,6 +136,28 @@ RL baselines \cite{b11}. RQL's strengths include the ability to train full, mult
 policies stably without distillation shortcuts, alongside drastically reduced value-estimation variance through
 exact ODE inversion \cite{b11}. However, RQL's primary weaknesses stem from the computational latency of integrating
 multi-step ODEs at inference time and its reliance on deterministic flow formulations \cite{b11}.
+
+The fifth model we reviewed was SimBa \cite{b12}, which was created by H. Lee, D. Hwang, et al. \cite{b12}.
+Compared to the other models we reviewed, SimBa is not a learning algorithm and it is instead a network
+architecture that can be plugged into existing DRL algorithms such as SAC \cite{b3} and PPO \cite{b2}, which it was
+tested on \cite{b12}. SimBa is designed to lead the network towards simpler solutions, allowing it to become bigger
+while minimizing overfitting \cite{b12}. It does this using three main components \cite{b12}. Firstly, SimBa
+normalizes the inputs by keeping note of the running mean and variance for each input, which puts those inputs on a
+similar scale to make it less likely that larger inputs overpower the smaller ones \cite{b12}. Secondly, SimBa uses
+residual blocks where each layer takes the input and adds a minor change, which leads the network towards simpler
+solutions since it can pass inputs mostly unchanged if there is nothing useful to add \cite{b12}. Lastly, SimBa
+uses layer normalization inside each block and before the output, keeping the values inside the network steady and
+making the training more stable \cite{b12}. For performance, SimBa was tested with SAC on 51 tasks from the
+DeepMind Control Suite, MyoSuite and HumanoidBench, where it matched or outperformed other state-of-the-art
+off-policy models while using less compute \cite{b12}. On the hardest DeepMind Control tasks, adding SimBa
+increased the average return of SAC by about 570, showing that changing the network architecture can improve
+performance without changing the learning algorithm \cite{b12}. SimBa was also tested with PPO on Craftax, where it
+allowed the agent to progress through the game faster than with a standard network \cite{b12}. SimBa's strengths
+include how easily it can be added to existing DRL algorithms and how it allows the network to become bigger while
+minimizing overfitting \cite{b12}. However, its improvements were smaller on tasks with fewer inputs, and making
+the actor network bigger showed little to no benefit \cite{b12}. SimBa was mostly tested on continuous control
+tasks, and the reviewed experiments did not include driving tasks such as highway merging, which is something our
+project can explore.
 
 \section{Preliminary Benchmarking}
 To get an early baseline, I built a test version of our environment in our ``profile\_test'' folder and
