@@ -1,4 +1,6 @@
 
+NOTE: original research for highway-eng
+
 
 merging traffic
 

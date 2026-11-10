@@ -1,3 +1,10 @@
+NOTE: This was before the midterm when she changed the requirements
+
+
+
+
+
+
 I wanted to move these out of the README, but I didn't want to get rid of them:
   
 `python -m venv .venv` -> create virtual environment named `.venv`  

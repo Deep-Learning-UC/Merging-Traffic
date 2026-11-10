@@ -1,5 +1,5 @@
 """
-from Claude - model_research_two prompt 2
+from Claude - midterm_research_connor prompt 2
 """
 """
 Minimal DQN from scratch (PyTorch + Gymnasium).

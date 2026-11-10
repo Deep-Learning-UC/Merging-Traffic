@@ -1,5 +1,5 @@
 """
-Copied from Claude - model_research_two.md prompt 2
+Copied from Claude - midterm_research_connor.md prompt 2
 """
 """
 Benchmark template: train + evaluate SB3 algorithms on highway-env over several seeds.
