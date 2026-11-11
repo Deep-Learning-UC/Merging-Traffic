@@ -6,6 +6,17 @@ YOU = {
     "cars_seen": 8,
 }
 
+# TODO make it change based on what model is being run. e.g. discretemeta for dqn, continuous for ppo, sac, etc.
+ACTION = {
+    "type": "ContinuousAction",
+    "steering_range": (-0.1, 0.1),  # try 0.05-0.15
+}
+# there might be other options? for continuousaction
+# {
+#     "type": "DiscreteMetaAction", 
+#     "target_speeds": [0, 5, 10, 15, 20, 25, 30, 35]
+# }
+
 DEFAULT_DRIVER = {
     "chance": 0.7,  # spawn weight vs other personalities
     "speed": 1.05,  # fraction of speed limit
@@ -121,6 +132,12 @@ REWARDS = {
     "toward_exit_lane": 0.5,  # per lane, negative when moving away
     "stopped_ok_within": 25,  # m, slow is free if blocked this close
     "per_second": -0.02,  # full timeout must cost less than a crash
+    "off_road": -12,
+    "spun_out": -12,
+    "spin_limit": 1.57,    # rad, ~90 degrees off the lane direction ends the life
+    "steer": -0.05,
+    "steer_change": -0.05,
+    "heading_error": -0.1, # per rad
 }
 
 VIDEO = {
@@ -141,7 +158,8 @@ MODEL = {
 
 TRAIN = {
     "show_ui": False,  # only used when train.py cant prompt
-    "models": ["DQN", "PPO", "A2C"],
+    # "models": ["DQN", "PPO", "A2C"],
+    "models": ["PPO"],
     "max_steps": 300_000,  # per model
     "goal_exit_rate": 0.9,  # stop early at this exit rate over last 100 lives
     "envs": 5,  # parallel envs per model
@@ -159,6 +177,10 @@ TRAIN = {
         "PPO": {"learning_rate": 3e-4, "n_steps": 1024, "batch_size": 64, "ent_coef": 0.01},  # ent_coef: else never changes lanes
         "A2C": {"learning_rate": 3e-4, "n_steps": 64, "ent_coef": 0.01},  # ent_coef: else locks into crashing
     },
+    "policy_kwargs": {
+        "PPO": {"log_std_init": -2.0}, 
+        "A2C": {"log_std_init": -2.0}
+    },  # quieter start
 }
 
 # fill in defaults and catch typos in personality keys

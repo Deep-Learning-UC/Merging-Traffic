@@ -2,7 +2,7 @@
 from collections import Counter
 
 import variables as v
-from environment import make_env
+from profile_test_environment import make_env
 from main import play
 
 OUTCOMES = {"made exit", "missed exit", "crashed", "stuck"}

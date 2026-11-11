@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 
 from variables import MODEL, PERSONALITIES, VIDEO
-from environment import WRECK_COLOR
+from profile_test_environment import WRECK_COLOR
 
 HERE = Path(__file__).resolve().parent
 PANEL, TEXT, DIM, BLUE = (18, 22, 30), (235, 238, 245), (150, 158, 172), (90, 170, 255)
@@ -15,6 +15,9 @@ ENDING_COLORS = {"crashed": (240, 80, 80), "made exit": (80, 210, 120), "missed 
 ENDINGS = {"skipped": "SKIPPED", "crashed": "CRASHED", "made exit": "MADE THE EXIT", "missed exit": "MISSED THE EXIT"}
 # a pileup can block every lane forever, so lives give up here
 MAX_STEPS = 300
+
+ENDING_COLORS |= {"off road": (240, 80, 80), "spun out": (240, 80, 80)}
+ENDINGS |= {"off road": "WENT OFF ROAD", "spun out": "SPUN OUT"}
 
 
 
@@ -54,10 +57,12 @@ def ask_model(model, obs):
     with torch.no_grad():
         if hasattr(model, "q_net"):
             scores, kind = model.q_net(model.q_net.obs_to_tensor(obs)[0])[0].numpy(), "q values"
-        elif hasattr(model.policy, "get_distribution"):
+        elif hasattr(model.policy, "get_distribution") and hasattr(model.action_space, "n"):
             scores, kind = model.policy.get_distribution(model.policy.obs_to_tensor(obs)[0]).distribution.probs[0].numpy(), "chances"
         else:
-            return int(model.predict(obs, deterministic=True)[0]), None, ""
+            # TODO model.predict() cannot be int for continuousaction
+            # return int(model.predict(obs, deterministic=True)[0]), None, ""
+            return model.predict(obs, deterministic=True)[0], None, ""
     return int(np.argmax(scores)), scores, kind
 
 

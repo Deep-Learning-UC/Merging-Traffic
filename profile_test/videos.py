@@ -8,7 +8,7 @@ import imageio.v2 as imageio
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont, ImageTk
 
-from environment import make_env
+from profile_test_environment import make_env
 from main import BLUE, DIM, ENDING_COLORS, ENDINGS, PANEL, TEXT, ask_model, key_items, load_model
 from variables import MODEL, TRAIN, VIDEO, YOU
 

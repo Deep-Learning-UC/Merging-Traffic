@@ -3,7 +3,7 @@ from collections import Counter
 from pathlib import Path
 
 import variables as v
-from environment import make_env
+from profile_test_environment import make_env
 from main import ask_model, load_model, play
 
 HERE = Path(__file__).resolve().parent
@@ -31,7 +31,8 @@ def score(driver):
     n = v.TRAIN["eval_episodes"]
     pct = lambda k: f"{100 * outcomes[k] / n:.0f}%"
     avg_time = f"{sum(exit_times) / len(exit_times):.1f}" if exit_times else "-"
-    return [driver, pct("made exit"), pct("crashed"), pct("missed exit"), pct("stuck"), avg_time, f"{sum(rewards) / n:.2f}"]
+    crashed = f"{100 * (outcomes['crashed'] + outcomes['off road'] + outcomes['spun out']) / n:.0f}%"
+    return [driver, pct("made exit"), crashed, pct("missed exit"), pct("stuck"), avg_time, f"{sum(rewards) / n:.2f}"]
 
 
 if __name__ == "__main__":

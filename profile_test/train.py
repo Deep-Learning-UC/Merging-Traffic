@@ -18,7 +18,7 @@ from stable_baselines3.common.callbacks import BaseCallback
 from stable_baselines3.common.vec_env import SubprocVecEnv, VecMonitor
 
 import variables as v
-from environment import make_env
+from profile_test_environment import make_env
 
 HERE = Path(__file__).resolve().parent
 LOG = HERE / v.TRAIN["folder"] / "training_log.txt"
@@ -94,7 +94,7 @@ class Progress(BaseCallback):
         lives = list(self.model.ep_info_buffer)
         n = max(len(lives), 1)
         exits = sum(e["outcome"] == "made exit" for e in lives) / n
-        crashes = sum(e["outcome"] == "crashed" for e in lives) / n
+        crashes = sum(e["outcome"] in ("crashed", "off road", "spun out") for e in lives) / n
         timeouts = sum(e["outcome"] is None for e in lives) / n
         rewards = [e["r"] for e in lives] or [0]
         speed = self.num_timesteps / (time.time() - self.start)
@@ -112,7 +112,7 @@ def train(name, port, steps, stream):
     algo = getattr(importlib.import_module(v.MODEL["library"]), name)
     env = VecMonitor(SubprocVecEnv([partial(training_env, i, port, stream) for i in range(v.TRAIN["envs"])]), info_keywords=("outcome",))
     env.seed(v.TRAIN["seed"])
-    model = algo("MlpPolicy", env, gamma=v.TRAIN["gamma"], seed=v.TRAIN["seed"], policy_kwargs=dict(net_arch=[256, 256]),
+    model = algo("MlpPolicy", env, gamma=v.TRAIN["gamma"], seed=v.TRAIN["seed"], policy_kwargs=dict(net_arch=[256, 256], **v.TRAIN["policy_kwargs"].get(name, {})),
                  verbose=0, **v.TRAIN["settings"].get(name, {}))
     model.learn(steps, callback=Progress(name, steps))
     out = HERE / v.TRAIN["folder"] / name
