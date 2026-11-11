@@ -20,6 +20,7 @@ to implement PPO+ I just need to create a model class that can interact with hig
    - but you’ll need to rewrite the lane-change reward term
    - it works. cool
 - [ ] Vendor the files above and get `run_training` to run on a bare single environment with a dummy `Metrics`.
+ - https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=powershell#enable-long-paths-in-windows-10-version-1607-and-later
 - [ ] Write the wrapper: `learn`, `save`, `load` and `predict`, with the single environment and a `Metrics` that feeds `say()`.
 - [ ] Add the per-model library lookup in `train.py`, `main.py` and `evaluate.py`, and fix `ask_model` for array actions. Then adjust the HUD in `videos.py` and `watch.py`.
 - [ ] Tune. The defaults, such as 5,000 steps per update and `clipping_ratio=0.25`, are reasonable starting points. Watch the logged α and the actor entropy.

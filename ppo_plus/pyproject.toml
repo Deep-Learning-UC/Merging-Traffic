@@ -1,0 +1,69 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ppo-plus-rl"
+version = "0.1.0"
+description = "Research implementation accompanying PPO+: Enhancing proximal policy optimization"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+license = "MIT"
+authors = [
+  { name = "Mahdi Kallel" },
+  { name = "Jose-Luis Holgado-Alvarez" },
+  { name = "Samuele Tosatto" },
+  { name = "Carlo D'Eramo" },
+]
+keywords = ["reinforcement learning", "PPO", "JAX", "continuous control"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+  "distrax==0.1.5",
+  "flax==0.11.0",
+  "jax==0.6.0",
+  "numpy>=1.26,<3",
+  "optax==0.2.5",
+]
+
+[project.optional-dependencies]
+cuda12 = ["jax[cuda12]==0.6.0"]
+baselines = [
+  "gymnasium[mujoco]==1.2.0",
+  "torch==2.7.1",
+  "tqdm==4.67.1",
+  "wandb==0.21.0",
+]
+plots = [
+  "matplotlib==3.10.3",
+  "pandas==2.3.1",
+  "rliable==1.2.0",
+  "seaborn==0.13.2",
+  "wandb==0.21.0",
+]
+paper = [
+  "dm-control==1.0.31",
+  "dm-env==1.6",
+  "gymnasium[mujoco]==1.2.0",
+  "matplotlib==3.10.3",
+  "pandas==2.3.1",
+  "rliable==1.2.0",
+  "seaborn==0.13.2",
+  "torch==2.7.1",
+  "tqdm==4.67.1",
+  "wandb==0.21.0",
+]
+[project.urls]
+Repository = "https://github.com/kallel-mahdi/PPO-Plus"
+Issues = "https://github.com/kallel-mahdi/PPO-Plus/issues"
+
+[tool.setuptools.packages.find]
+include = ["ppo_plus*", "paper_baselines*", "plots*"]
+namespaces = true
