@@ -19,8 +19,9 @@ to implement PPO+ I just need to create a model class that can interact with hig
       - maybe don't have them on
    - but you’ll need to rewrite the lane-change reward term
    - it works. cool
-- [ ] Vendor the files above and get `run_training` to run on a bare single environment with a dummy `Metrics`.
+- [x] Vendor the files above and get `run_training` to run on a bare single environment with a dummy `Metrics`.
  - https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=powershell#enable-long-paths-in-windows-10-version-1607-and-later
+ - i think it's running
 - [ ] Write the wrapper: `learn`, `save`, `load` and `predict`, with the single environment and a `Metrics` that feeds `say()`.
 - [ ] Add the per-model library lookup in `train.py`, `main.py` and `evaluate.py`, and fix `ask_model` for array actions. Then adjust the HUD in `videos.py` and `watch.py`.
 - [ ] Tune. The defaults, such as 5,000 steps per update and `clipping_ratio=0.25`, are reasonable starting points. Watch the logged α and the actor entropy.
@@ -1258,3 +1259,53 @@ def make_env(render_mode=None, **config):
     env.configure(config)
     return env
 ```
+
+# Prompt 8 
+
+here's what i have for step 2, but i think i'm doing it wrong. this is in ppo_plus/ppo_plus where the top level ppo_plus is in the repo root. should i nest it all in profile_test?
+
+upload agents.py
+
+# Response 8
+
+Yes, nest it, but only the inner package, and put it back to upstream-style imports. Your flat imports are the symptom of the layout problem.
+
+## Layout
+
+Move the files from your `ppo_plus/ppo_plus/` into `profile_test/ppo_plus/`:
+
+```
+profile_test/
+  ppo_plus/            <- package: __init__, agent, environments, kernels, networks, replay, tracking
+    LICENSE, THIRD_PARTY_NOTICES.md   (keep the attribution here)
+  ppo_plus_model.py    <- your wrapper (later)
+  train.py, main.py, variables.py, ...
+```
+
+Delete the outer `ppo_plus/` folder. Then restore the original imports (`from ppo_plus.environments import ...`, etc.). They work because you run `python main.py` from `profile_test/`, and Python puts that folder on the import path. That's how `from variables import MODEL` already works.
+
+Your flat imports only worked when you ran `agent.py` directly. A wrapper doing `import ppo_plus.agent` would fail, and generic module names like `environments` and `networks` can collide with other modules. Name the wrapper `ppo_plus_model.py`, not `ppo_plus.py`, which would clash with the package folder.
+
+## Revert the other edits to `agent.py`
+
+- **wandb:** `pip install wandb` and leave `tracking.py` and its import untouched. Since you never call `train()`, W&B never runs.
+- **`RunConfig.from_dict`:** unnecessary, because `RunConfig` is a plain dataclass you can construct directly.
+- **`Metrics`, the `print("run")` lines and `main()`:** `Metrics` belongs in your wrapper. Move the smoke test into a separate script, so `agent.py` stays identical to upstream and easy to diff.
+
+## Two problems in your test config
+
+1. **`policy_steps=50_000` with `on_policy_data=True`.** With 300k total steps, that's only 6 policy updates. And `on_policy_data=True` calls `replay_buffer.reset()` every iteration, so the critics train only on the latest batch. That removes PPO+'s main idea, which is reusing a 50k replay buffer for the critics, and the argparse default is `False`. Start from the paper's defaults:
+
+```python
+RunConfig(total_steps=300_000, buffer_size=50_000, policy_steps=5_000,
+          num_epochs=10, on_policy_data=False, log_interval=10**9)
+```
+
+   That roughly matches the 5,120 steps per update (5 envs × 1,024) in your SB3 PPO.
+2. **`gymnasium.make('highway-v0')`.** That's the stock environment with discrete actions and a 2D observation. `_create_run_state` calls `env.action_space.sample()`, which returns an integer there, so setup fails. For the smoke test, use your own continuous `make_env()`. Run a tiny budget first (e.g. `total_steps=10_000`, `policy_steps=1_000`) to check the loop runs end to end.
+
+Your `eval_env=None` with a huge `log_interval` is fine, because evaluation is never reached.
+
+## Next
+
+Once the smoke test runs, you can start on the wrapper. If it errors, paste the traceback and I'll help you trace it.

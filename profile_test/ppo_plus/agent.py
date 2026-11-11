@@ -438,6 +438,20 @@ class RunConfig:
             on_policy_data=args.on_policy_data,
         )
 
+    @classmethod
+    def from_dict(cls, d: Any) -> RunConfig:
+        return cls(
+            total_steps=(
+                d["max_steps"]
+                if d["max_steps"] is not None
+                else get_max_steps_for_env(d["env_name"])
+            ),
+            buffer_size=d["buffer_size"],
+            policy_steps=d["policy_steps"],
+            num_epochs=d["num_epochs"],
+            on_policy_data=d["on_policy_data"],
+        )
+
     @property
     def replay_capacity(self) -> int:
         return self.policy_steps if self.on_policy_data else self.buffer_size
@@ -566,14 +580,43 @@ def train(args: Any) -> PPOPlusAgent:
         RunConfig.from_args(args),
         env=env,
         eval_env=eval_env,
-        metrics=setup_wandb(args.project_name, vars(args)),
+        # metrics=setup_wandb(args.project_name, vars(args)),
     )
     env.close()
     eval_env.close()
     return state.agent
 
 
+
+
 def main(argv: Sequence[str] | None = None) -> None:
     args = create_parser().parse_args(argv)
     np.random.seed(args.seed)
     train(args)
+
+    # disregard all this
+
+    # run_c = {
+    #     "max_steps": 300_000,
+    #     "buffer_size": 50_000,
+    #     "policy_steps": 50_000, #?
+    #     "num_epochs": 10, #?
+    #     "on_policy_data": True,
+    #     "log_interval": 300_000_000, # just make it above max_steps, i don't want eval_env being called
+    # }
+
+    # import gymnasium  
+    # import highway_env
+
+    # run_training(
+    #     learner_config=PPOPlusConfig(),
+    #     run_config=RunConfig.from_dict(run_c),
+    #     env=gymnasium.make('highway-v0'),
+    #     eval_env=None,
+    #     metrics=None,
+    # )
+
+if __name__ == "__main__":
+    main()
+
+
