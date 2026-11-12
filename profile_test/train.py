@@ -109,7 +109,7 @@ class Progress(BaseCallback):
 
 
 def train(name, port, steps, stream):
-    algo = getattr(importlib.import_module(v.MODEL["library"]), name)
+    algo = getattr(importlib.import_module(v.MODEL[name]["library"]), name)
     env = VecMonitor(SubprocVecEnv([partial(training_env, i, port, stream) for i in range(v.TRAIN["envs"])]), info_keywords=("outcome",))
     env.seed(v.TRAIN["seed"])
     model = algo("MlpPolicy", env, gamma=v.TRAIN["gamma"], seed=v.TRAIN["seed"], policy_kwargs=dict(net_arch=[256, 256], **v.TRAIN["policy_kwargs"].get(name, {})),

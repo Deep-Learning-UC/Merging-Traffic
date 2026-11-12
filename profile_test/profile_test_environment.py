@@ -130,7 +130,7 @@ class MergeExitEnv(AbstractEnv):
     def default_config(cls):
         config = super().default_config()
         config["observation"] = {"type": "Kinematics", "vehicles_count": YOU["cars_seen"], "see_behind": True, "include_obstacles": True}
-        config["action"] = ACTION
+        config["action"] = ACTION[TRAIN["action_type"]]
         config["simulation_frequency"] = TRAIN["physics_per_second"]
         return config
 
@@ -245,9 +245,11 @@ class MergeExitEnv(AbstractEnv):
         me = self.vehicle
         if me.crashed:
             return "crashed"
-        # CHANGED: leaving the road or turning around ends the life, else circling off road is farmable
-        if not me.on_road:
-            return "off road"
+        if TRAIN["action_type"] == "continuous":
+            if not me.on_road:
+                return "off road"
+            if abs(self.heading_error()) > REWARDS["spin_limit"]:
+                return "spun out"
         if me.lane_index[:2] == ("d", "x"):
             return "made exit" if me.lane.local_coordinates(me.position)[0] > ROAD["exit_ramp_length"] / 2 else None
         if me.lane_index[:2] == ("d", "e") and me.position[0] > self.split_x + 40:
@@ -271,27 +273,30 @@ class MergeExitEnv(AbstractEnv):
         return self.observe(obs), reward, done, truncated, info
 
     def _reward(self, action):
+        continuous = TRAIN["action_type"] == "continuous"
         me = self.vehicle
         # too slow is free when blocked
         lo, hi = REWARDS["good_speed"]
         front = self.road.neighbour_vehicles(me, me.lane_index)[0]
         blocked = front is not None and me.lane_distance_to(front) < REWARDS["stopped_ok_within"]
-        # CHANGED: speed along the lane, so sideways, spinning and backwards earn nothing (or lose)
-        err = self.heading_error()
-        forward = me.speed * np.cos(err)
-        too_slow = 0 if blocked else max(lo - me.speed, 0)
-        r = REWARDS["speed"] if lo <= me.speed <= hi else REWARDS["off_speed"] * (too_slow + max(me.speed - hi, 0))
+        # continuous: speed along the lane, so sideways, spinning and backwards earn nothing (or lose)
+        err = self.heading_error() if continuous else 0.0
+        speed = me.speed * np.cos(err)  # discrete: err is 0, so this is just me.speed
+        too_slow = 0 if blocked else max(lo - speed, 0)
+        r = REWARDS["speed"] if lo <= speed <= hi else REWARDS["off_speed"] * (too_slow + max(speed - hi, 0))
         # ramp cost grows each second
         if me.lane_index[:2] == ("a", "b") and me.lane_index[2] == self.lanes:
             self.ramp_seconds += 1
             r += REWARDS["on_ramp"] * self.ramp_seconds
-        # actions 0, 2 = lane left, right
-        # CHANGED: continuous action = [acceleration, steering] in -1..1. small costs for big or jerky steering and for pointing off the lane
-        steer = float(np.clip(np.ravel(action)[-1], -1, 1))
-        r += REWARDS["steer"] * abs(steer) + REWARDS["steer_change"] * abs(steer - self.prev_steer) + REWARDS["heading_error"] * abs(err)
-        self.prev_steer = steer
-        # TODO continuous action cannot be in (0, 2), so lane_change is not rewarded
-        r += REWARDS["per_second"] #REWARDS["lane_change"] * (action in (0, 2)) + REWARDS["per_second"]
+        if continuous:
+            # action = [acceleration, steering] in -1..1. small costs for big or jerky steering and for pointing off the lane
+            steer = float(np.clip(np.ravel(action)[-1], -1, 1))
+            r += REWARDS["steer"] * abs(steer) + REWARDS["steer_change"] * abs(steer - self.prev_steer) + REWARDS["heading_error"] * abs(err)
+            self.prev_steer = steer
+        else:
+            # actions 0, 2 = lane left, right
+            r += REWARDS["lane_change"] * (action in (0, 2))
+        r += REWARDS["per_second"]
         # new wrecks within 30 m count as caused by you
         new_wrecks = [c for c in self.road.vehicles if c.crashed and c is not me and id(c) not in self.wrecks_seen]
         self.wrecks_seen |= {id(c) for c in new_wrecks}
@@ -303,9 +308,11 @@ class MergeExitEnv(AbstractEnv):
         lanes_off = abs(self.lanes_to_exit())
         r += REWARDS["toward_exit_lane"] * (self.last_lanes_off - lanes_off)
         self.last_lanes_off = lanes_off
+        # off road / spun out can only happen in continuous mode (see outcome)
         ends = {"crashed": REWARDS["crash"], "off road": REWARDS["off_road"], "spun out": REWARDS["spun_out"],
-                "made exit": REWARDS["made_exit"], "missed exit": REWARDS["missed_exit"]}  # CHANGED: two new endings
+                "made exit": REWARDS["made_exit"], "missed exit": REWARDS["missed_exit"]}
         return r + ends.get(self.outcome(), 0)
+
 
 
     # lets training count exits and crashes

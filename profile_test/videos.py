@@ -190,6 +190,7 @@ def run(argv=None):
         YOU["driver"] = "model"
     seed = args.seed if args.seed is not None else random.randint(0, 99999)
     print(f"seed {seed}")
+    print(f"evaluating for {MODEL['name']}")
 
     VIDEO_DIR.mkdir(exist_ok=True)
     show = VIDEO["show_window"] and not args.no_window

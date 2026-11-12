@@ -43,46 +43,47 @@ import numpy as np
 from profile_test_environment import make_env
 from train import Progress
 
-# settings that belong to RunConfig; everything else in TRAIN["settings"]["PPOPlus"] goes to PPOPlusConfig
-RUN_KEYS = {"buffer_size", "policy_steps", "num_epochs", "on_policy_data"}
-
-
-# records every finished life the way SB3's VecMonitor does, so Progress can read exit/crash/timeout rates
-class EpisodeLog(gym.Wrapper):
-    def __init__(self, env):
-        super().__init__(env)
-        self.lives = deque(maxlen=100)  # last 100 lives: {"r": return, "outcome": ...}
-        self.finished = 0
-        self._return = 0.0
-
-    def reset(self, **kwargs):
-        self._return = 0.0
-        return self.env.reset(**kwargs)
-
-    def step(self, action):
-        obs, reward, terminated, truncated, info = self.env.step(action)
-        self._return += reward
-        if terminated or truncated:
-            self.lives.append({"r": self._return, "outcome": info.get("outcome")})
-            self.finished += 1
-        return obs, reward, terminated, truncated, info
-
-
 class PPOPlus:
-    single_env = True  # train() builds ONE gymnasium env for this model, not a SubprocVecEnv
-
     # policy / policy_kwargs / verbose only exist so train() can call it exactly like an SB3 algorithm
     def __init__(self, policy, env, gamma=0.99, seed=0, policy_kwargs=None, verbose=0, **settings):
-        # run_kw = {k: settings.pop(k) for k in list(settings) if k in RUN_KEYS}
-        # self.run_kw = {"buffer_size": 50_000, "policy_steps": 5_000, "num_epochs": 10, "on_policy_data": False, **run_kw}
-        self.learner_config = PPOPlusConfig(discount=gamma, seed=seed, **settings)  # typos in settings raise here
-        # self.env = env # EpisodeLog(env)
+        """
+        settings = {
+            "hidden_dims"
+            "actor_lr"
+            "critic_lr"
+            "temp_lr"
+            "momentum"
+            "clipping_ratio"
+            "total_steps"
+            "buffer_size"
+            "policy_steps"
+            "num_epochs"
+            "on_policy_data"
+        }
+        """
+        self.learner_config = PPOPlusConfig(
+            discount=gamma, 
+            seed=seed, 
+            hidden_dims=settings["hidden_dims"],
+            actor_lr=settings["actor_lr"],
+            critic_lr=settings["critic_lr"],
+            temp_lr=settings["temp_lr"],
+            momentum=settings["momentum"],
+            clipping_ratio=settings["clipping_ratio"],
+        ) 
+        self.run_config = RunConfig(
+            total_steps=settings["total_steps"], 
+            buffer_size=settings["buffer_size"], 
+            policy_steps=settings["policy_steps"],
+            num_epochs=settings["num_epochs"], 
+            on_policy_data=settings["on_policy_data"], 
+            log_interval=10**9 # just has to be higher than total_steps
+        )
         self.observation_space, self.action_space = env.observation_space, env.action_space
-        # self.ep_info_buffer = self.env.lives  # Progress reads this
-        # self.num_timesteps = 0
+        self.num_timesteps = 0
         self.agent = None
-        # self.policy = None  # main.ask_model checks model.policy; None makes it fall through to predict()
-        # self.logger = None
+        self.policy = None  # main.ask_model checks model.policy; None makes it fall through to predict()
+        self.logger = None
         self.env = env
 
     def get_env(self):  # BaseCallback.init_callback asks for this
@@ -90,53 +91,14 @@ class PPOPlus:
 
     # ------------------------------------------------------------------ training
     def learn(self, total_timesteps, callback=None):
-        print("PPO PLUS LEARN")
         # run_training builds the agent and trains all in one. it's provided by the PPO+ repo
         state = run_training(
             learner_config=self.learner_config,
-            # run_config=RunConfig(total_steps=300_000, buffer_size=50_000, policy_steps=5_000,
-            #   num_epochs=10, on_policy_data=False, log_interval=10**9),
-            run_config=RunConfig(total_steps=1_000, buffer_size=50_000, policy_steps=1_000,
-                num_epochs=10, on_policy_data=False, log_interval=10**9), # log_interval is just supposed to be > total_steps, to make it work
+            run_config=self.run_config,
             env=self.env,
             eval_env=None,
             metrics=Metrics()
         )
-        # cfg, run = self.learner_config, RunConfig(total_steps=total_timesteps, **self.run_kw)
-        # state = _create_run_state(cfg, run, self.env)
-        # self.agent = state.agent
-        # seen = 0
-        # if callback is not None:
-        #     callback.init_callback(self)
-        #     callback.on_training_start({}, {})
-
-        # while state.environment_steps < total_timesteps:
-        #     next_rng, rng = jax.random.split(state.rollout_rng)
-        #     replay = state.replay_buffer
-        #     if run.on_policy_data:
-        #         replay.reset()
-        #     # 1) collect policy_steps steps with the current policy
-        #     _, _, n = rollout_policy(
-        #         state.agent, self.env, rng, discount=cfg.discount, max_steps=run.policy_steps,
-        #         reset_seed=cfg.seed if state.environment_steps == 0 else None,
-        #         replay_buffer=replay, actor_buffer=state.actor_buffer,
-        #     )
-        #     # 2) update critics on the replay buffer, actor on the fresh batch
-        #     agent = state.agent
-        #     critic_data, actor_data = replay.get_all(), state.actor_buffer.get_all()
-        #     for _ in range(run.num_epochs):
-        #         agent = agent.update_critics_seq(critic_data)
-        #         agent, self.last_info = agent.update_actor_seq(actor_data)
-        #     state = replace(state, agent=agent, replay_buffer=replay, rollout_rng=next_rng,
-        #                     environment_steps=state.environment_steps + n)
-        #     self.agent, self.num_timesteps = agent, state.environment_steps
-
-        #     # 3) hand control to Progress: it logs, checkpoints (calls self.save) and can say stop
-        #     if callback is not None:
-        #         callback.update_locals({"dones": [1] * (self.env.finished - seen)})
-        #         seen = self.env.finished
-        #         if not callback.on_step():
-        #             break
         self.agent = state.agent
         return self
 
@@ -176,8 +138,13 @@ class PPOPlus:
 
 # TODO what does wandb metrics do? which is what metrics are supposed to be
 class Metrics:
+    # def __init__(self, progress: Progress):
+    #     self.p: Progress = progress # train.py Progress() class
+    # integrating with progress doesn't work :(
+
     def log(self, dict, step, commit=True):
-        print(f"\nMETRICS: {dict} step: {step}\n")
+        # self.p._on_step()
+        print(f"METRICS: {dict} step: {step}\n")
         return
 
     def finish(self):
@@ -185,9 +152,9 @@ class Metrics:
         return
 
 if __name__ == "__main__":
+    # smoke test 
 
-    # # smoke test 
-    # # i think it's running
+    # without wrapper
     # run_training(
     #     learner_config=PPOPlusConfig(),
     #     # run_config=RunConfig(total_steps=300_000, buffer_size=50_000, policy_steps=5_000,
@@ -198,7 +165,7 @@ if __name__ == "__main__":
     #     eval_env=None,
     #     metrics=None #Metrics()
     # )
-    print("start")
+
+    # with wrapper
     pp = PPOPlus(None, make_env())
-    print("ppo")
     pp.learn(1_000, Progress("name", 100))

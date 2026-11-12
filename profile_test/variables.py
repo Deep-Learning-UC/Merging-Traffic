@@ -6,16 +6,18 @@ YOU = {
     "cars_seen": 8,
 }
 
-# TODO make it change based on what model is being run. e.g. discretemeta for dqn, continuous for ppo, sac, etc.
+# change TRAIN[action_type] to switch back and forth
 ACTION = {
-    "type": "ContinuousAction",
-    "steering_range": (-0.1, 0.1),  # try 0.05-0.15
+    "continuous": {
+        "type": "ContinuousAction",
+        "steering_range": (-0.1, 0.1),  # try 0.05-0.15
+    },
+    "discrete":  {
+        "type": "DiscreteMetaAction", 
+        "target_speeds": [0, 5, 10, 15, 20, 25, 30, 35]
+    }
 }
 # there might be other options? for continuousaction
-# {
-#     "type": "DiscreteMetaAction", 
-#     "target_speeds": [0, 5, 10, 15, 20, 25, 30, 35]
-# }
 
 DEFAULT_DRIVER = {
     "chance": 0.7,  # spawn weight vs other personalities
@@ -150,17 +152,49 @@ VIDEO = {
     "you_color": (50, 200, 0),
 }
 
+# MODEL = {
+#     "name": "DQN", # this is what's being loaded for evaluate
+#     "library": "stable_baselines3",  # or "sb3_contrib"
+#     "path": "trained/DQN.zip",  # main.py --model NAME overrides
+#     "DQN": {
+#         "library": "stable_baselines3"
+#     },
+#     "PPO": {
+#         "library": "stable_baselines3"
+#     },
+#     "A2C": {
+#         "library": "stable_baselines3"
+#     },
+#     "PPOPlus": {
+#         "library": "ppo_plus_wrapper"
+#     }
+# }
+
+# make sure to change the action type in TRAIN.action_type
 MODEL = {
-    "name": "DQN",
-    # "library": "stable_baselines3",  # or "sb3_contrib"
+    "name": "PPOPlus",
     "library": "ppo_plus_wrapper",
-    "path": "trained/DQN.zip",  # main.py --model NAME overrides
+    "path": "trained/PPOPlus.zip",
+    "DQN": {
+        "library": "stable_baselines3"
+    },
+    "PPO": {
+        "library": "stable_baselines3"
+    },
+    "A2C": {
+        "library": "stable_baselines3"
+    },
+    "PPOPlus": {
+        "library": "ppo_plus_wrapper"
+    }
 }
 
 TRAIN = {
     "show_ui": False,  # only used when train.py cant prompt
-    # "models": ["DQN", "PPO", "A2C"],
-    "models": ["PPOPlus"],
+    # "models": ["DQN", "A2C"], # discrete. A2C can be either and it's configured automatically
+    # "action_type": "discrete",
+    "models": ["PPOPlus", "PPO"], # continuous
+    "action_type": "continuous", # or discrete, change this when you change the models
     "max_steps": 300_000,  # per model
     "goal_exit_rate": 0.9,  # stop early at this exit rate over last 100 lives
     "envs": 5,  # parallel envs per model
@@ -177,6 +211,19 @@ TRAIN = {
                 "target_update_interval": 500, "exploration_fraction": 0.3},
         "PPO": {"learning_rate": 3e-4, "n_steps": 1024, "batch_size": 64, "ent_coef": 0.01},  # ent_coef: else never changes lanes
         "A2C": {"learning_rate": 3e-4, "n_steps": 64, "ent_coef": 0.01},  # ent_coef: else locks into crashing
+        "PPOPlus": {
+            "hidden_dims": 256, # default
+            "actor_lr": 0.0003, # default
+            "critic_lr": 0.0003, # default
+            "temp_lr": 0.0003, # default
+            "momentum": 0.9, # default
+            "clipping_ratio": 0.25, # default
+            "total_steps": 300_000, # claude recommendation, or use TRAIN["max_steps"]
+            "buffer_size": 50_000, # claude recommendation
+            "policy_steps": 5_000, # claude recommendation
+            "num_epochs": 10, # claude recommendation
+            "on_policy_data": False, # claude recommendation
+        }
     },
     "policy_kwargs": {
         "PPO": {"log_std_init": -2.0}, 

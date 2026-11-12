@@ -25,9 +25,13 @@ to implement PPO+ I just need to create a model class that can interact with hig
 - ~~[] Write the wrapper: `learn`, `save`, `load` and `predict`, with the single environment and a `Metrics` that feeds `say()`.~~
     - ~~we don't have metrics but idk if we care~~
 - ~~[ ] Add the per-model library lookup in `train.py`, `main.py` and `evaluate.py`, and fix `ask_model` for array actions. Then adjust the HUD in `videos.py` and `watch.py`.~~
-- [ ] export ppo+ config settings into variables.py
-- [ ] get save(), load(), and predict() to work
+- [x] get save(), load(), and predict() to work
+- [x] export ppo+ config settings into variables.py
+- [x] make sure dqn can work still
+- [ ] get metrics to work with progress - doesn't work and i don't care
+- [x] clean up code
 - [ ] Tune. The defaults, such as 5,000 steps per update and `clipping_ratio=0.25`, are reasonable starting points. Watch the logged α and the actor entropy.
+
 
 
 

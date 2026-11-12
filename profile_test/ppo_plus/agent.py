@@ -18,7 +18,7 @@ import optax
 import tqdm
 from flax.training.train_state import TrainState
 
-from ppo_plus.environments import create_environments, get_max_steps_for_env, rollout_policy
+from ppo_plus.environments import get_max_steps_for_env, rollout_policy
 from ppo_plus.kernels import (
     actor_minibatch_indices,
     compute_gae,
@@ -589,26 +589,26 @@ def run_training(
     return state
 
 
-def train(args: Any) -> PPOPlusAgent:
-    env, eval_env = create_environments(args.env_name)
-    state = run_training(
-        PPOPlusConfig.from_args(args),
-        RunConfig.from_args(args),
-        env=env,
-        eval_env=eval_env,
-        # metrics=setup_wandb(args.project_name, vars(args)),
-    )
-    env.close()
-    eval_env.close()
-    return state.agent
+# def train(args: Any) -> PPOPlusAgent:
+#     env, eval_env = create_environments(args.env_name)
+#     state = run_training(
+#         PPOPlusConfig.from_args(args),
+#         RunConfig.from_args(args),
+#         env=env,
+#         eval_env=eval_env,
+#         # metrics=setup_wandb(args.project_name, vars(args)),
+#     )
+#     env.close()
+#     eval_env.close()
+#     return state.agent
 
 
 
 
-def main(argv: Sequence[str] | None = None) -> None:
-    args = create_parser().parse_args(argv)
-    np.random.seed(args.seed)
-    train(args)
+# def main(argv: Sequence[str] | None = None) -> None:
+#     args = create_parser().parse_args(argv)
+#     np.random.seed(args.seed)
+#     train(args)
 
     # disregard all this
 
@@ -633,6 +633,6 @@ def main(argv: Sequence[str] | None = None) -> None:
     # )
 
 if __name__ == "__main__":
-    main()
+    print("hello world")
 
 
