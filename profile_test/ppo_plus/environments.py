@@ -11,28 +11,28 @@ from gymnasium.core import Env
 from gymnasium.spaces import Box
 
 
-def _spec_to_box(specification, dtype=np.float32):
-    from dm_env import specs
+# def _spec_to_box(specification, dtype=np.float32):
+#     from dm_env import specs
 
-    bounds = []
-    for item in specification:
-        size = int(np.prod(item.shape))
-        if isinstance(item, specs.BoundedArray):
-            bounds.append(
-                (
-                    np.broadcast_to(item.minimum, item.shape),
-                    np.broadcast_to(item.maximum, item.shape),
-                )
-            )
-        else:
-            limit = np.full(size, np.inf)
-            bounds.append((-limit, limit))
-    low, high = zip(*bounds)
-    return Box(
-        np.concatenate([np.ravel(value) for value in low]).astype(dtype),
-        np.concatenate([np.ravel(value) for value in high]).astype(dtype),
-        dtype=dtype,
-    )
+#     bounds = []
+#     for item in specification:
+#         size = int(np.prod(item.shape))
+#         if isinstance(item, specs.BoundedArray):
+#             bounds.append(
+#                 (
+#                     np.broadcast_to(item.minimum, item.shape),
+#                     np.broadcast_to(item.maximum, item.shape),
+#                 )
+#             )
+#         else:
+#             limit = np.full(size, np.inf)
+#             bounds.append((-limit, limit))
+#     low, high = zip(*bounds)
+#     return Box(
+#         np.concatenate([np.ravel(value) for value in low]).astype(dtype),
+#         np.concatenate([np.ravel(value) for value in high]).astype(dtype),
+#         dtype=dtype,
+#     )
 
 
 def _flatten_obs(obs, dtype=np.float32):
@@ -40,50 +40,50 @@ def _flatten_obs(obs, dtype=np.float32):
     return np.concatenate(pieces).astype(dtype)
 
 
-class DMCGym(Env):
-    """Adapt one DeepMind Control Suite task to the Gymnasium API."""
+# class DMCGym(Env):
+#     """Adapt one DeepMind Control Suite task to the Gymnasium API."""
 
-    def __init__(self, domain, task):
-        from dm_control import suite
+#     # def __init__(self, domain, task):
+#     #     from dm_control import suite
 
-        self._env = suite.load(domain, task)
-        self.observation_space = _spec_to_box(self._env.observation_spec().values())
-        self.action_space = _spec_to_box([self._env.action_spec()])
+#     #     self._env = suite.load(domain, task)
+#     #     self.observation_space = _spec_to_box(self._env.observation_spec().values())
+#     #     self.action_space = _spec_to_box([self._env.action_spec()])
 
-    def step(self, action):
-        timestep = self._env.step(np.asarray(action, dtype=np.float32))
-        return (
-            _flatten_obs(timestep.observation),
-            timestep.reward,
-            False,
-            timestep.last(),
-            {"discount": timestep.discount},
-        )
+#     def step(self, action):
+#         timestep = self._env.step(np.asarray(action, dtype=np.float32))
+#         return (
+#             _flatten_obs(timestep.observation),
+#             timestep.reward,
+#             False,
+#             timestep.last(),
+#             {"discount": timestep.discount},
+#         )
 
-    def reset(self, seed=None, options=None):
-        if seed is not None:
-            self._env.task._random = np.random.RandomState(seed)
-        return _flatten_obs(self._env.reset().observation), {}
+#     def reset(self, seed=None, options=None):
+#         if seed is not None:
+#             self._env.task._random = np.random.RandomState(seed)
+#         return _flatten_obs(self._env.reset().observation), {}
 
 
-def create_environments(env_name: str) -> tuple[gym.Env, gym.Env]:
-    """Create independent training and evaluation environments."""
-    gym_envs = {
-        "InvertedDoublePendulum-v5",
-        "Walker2d-v5",
-        "HalfCheetah-v5",
-        "Hopper-v5",
-        "Ant-v5",
-        "Humanoid-v5",
-    }
-    if env_name in gym_envs:
-        return (
-            gym.wrappers.RecordEpisodeStatistics(gym.make(env_name, max_episode_steps=1_000)),
-            gym.wrappers.RecordEpisodeStatistics(gym.make(env_name, max_episode_steps=1_000)),
-        )
+# def create_environments(env_name: str) -> tuple[gym.Env, gym.Env]:
+#     """Create independent training and evaluation environments."""
+#     gym_envs = {
+#         "InvertedDoublePendulum-v5",
+#         "Walker2d-v5",
+#         "HalfCheetah-v5",
+#         "Hopper-v5",
+#         "Ant-v5",
+#         "Humanoid-v5",
+#     }
+#     if env_name in gym_envs:
+#         return (
+#             gym.wrappers.RecordEpisodeStatistics(gym.make(env_name, max_episode_steps=1_000)),
+#             gym.wrappers.RecordEpisodeStatistics(gym.make(env_name, max_episode_steps=1_000)),
+#         )
 
-    domain, task = env_name.split("-")
-    return DMCGym(domain, task), DMCGym(domain, task)
+#     domain, task = env_name.split("-")
+#     return DMCGym(domain, task), DMCGym(domain, task)
 
 
 def get_max_steps_for_env(env_name: str) -> int:
@@ -122,49 +122,57 @@ def rollout_policy(
     if actor_buffer is not None:
         actor_buffer.reset()
 
-    observation, _ = env.reset(seed=reset_seed)
+    env.seed(reset_seed) # env.reset does not have seed param in vectorized
+    observation = env.reset()
     while (max_steps is None or n_steps < max_steps) and (
         max_rollouts is None or n_rollouts < max_rollouts
     ):
         if eval:
+            # this should never run now
             action = agent.deterministic_action(observation)
             log_probability, pre_action = 0.0, action
         else:
             exploration_rng, action_rng = jax.random.split(exploration_rng)
             action, log_probability, pre_action = agent.sample_actions(observation, seed=action_rng)
+            # this is batched
 
-        action = np.asarray(action)
-        next_observation, reward, terminated, truncated, _ = env.step(action)
-        discounted_return += reward * discount_multiplier
-        episode_return += reward
-        mask = float(not terminated)
+        action = np.asarray(action) # is this necessary?
+        next_observation, reward, dones, _ = env.step(action)
 
-        transition = {
-            "observations": observation,
-            "actions": action,
-            "rewards": reward,
-            "masks": mask,
-            "truncateds": truncated,
-            "next_observations": next_observation,
-            "log_probs": log_probability,
-            "pre_actions": pre_action,
-        }
-        if replay_buffer is not None:
-            replay_buffer.add_transition(transition)
-        if actor_buffer is not None:
-            actor_buffer.add_transition(transition)
+        for i in range(env.num_envs):
+            discounted_return += reward[i] * discount_multiplier
+            episode_return += reward[i]
+            mask = float(not dones[i])
 
-        observation = next_observation
-        discount_multiplier *= discount * mask
-        n_steps += 1
+            transition = {
+                "observations": observation[i],
+                "actions": action[i],
+                "rewards": reward[i],
+                "masks": mask,
+                "truncateds": dones[i],
+                "next_observations": next_observation[i],
+                "log_probs": log_probability[i],
+                "pre_actions": pre_action[i],
+            }
+            # print("TRANSITION", transition)
+            if replay_buffer is not None:
+                replay_buffer.add_transition(transition)
+            if actor_buffer is not None:
+                actor_buffer.add_transition(transition)
 
-        if terminated or truncated:
-            discounted_returns.append(discounted_return)
-            returns.append(episode_return)
-            discounted_return, episode_return = 0.0, 0.0
-            observation, _ = env.reset()
-            discount_multiplier = 1.0
-            n_rollouts += 1
+            # observation = next_observation
+            discount_multiplier *= discount * mask
+            n_steps += 1
+
+            if dones[i]:
+                # print("TERM/TRUNC")
+                discounted_returns.append(discounted_return)
+                returns.append(episode_return)
+                discounted_return, episode_return = 0.0, 0.0
+                # observation, _ = env.reset() called automatically? when vectorized
+                discount_multiplier = 1.0
+                n_rollouts += 1
+        observation = next_observation # i think? 
 
     return np.mean(discounted_returns), np.mean(returns), n_steps
 

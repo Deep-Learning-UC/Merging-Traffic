@@ -501,7 +501,7 @@ def run_training(
     learner_config: PPOPlusConfig,
     run_config: RunConfig,
     *,
-    env: Any,
+    env: Any, # now a VecMonitor - multipled environments at same time
     eval_env: Any,
     metrics: Any,
 ) -> RunState:
@@ -525,6 +525,21 @@ def run_training(
                 replay_buffer=replay_buffer,
                 actor_buffer=state.actor_buffer,
             )
+
+            # # vectorize call of rollout
+            # policy_return, undiscounted_return, num_steps = env.env_method("rollout_policy", 
+            #                state.agent,
+            #                env,
+            #                rollout_rng,
+            #                learner_config.discount, # discount
+            #                run_config.policy_steps, # max_steps
+            #                None, # max_rollouts
+            #                False, # eval
+            #                learner_config.seed if state.environment_steps == 0 else None, # reset_seed
+            #                replay_buffer, # replay_buffer
+            #                state.actor_buffer, # actor_buffer
+            # )
+
             state = replace(
                 state,
                 replay_buffer=replay_buffer,
@@ -532,7 +547,7 @@ def run_training(
                 environment_steps=state.environment_steps + num_steps,
                 steps_since_evaluation=state.steps_since_evaluation + num_steps,
             )
-            progress.update(num_steps)
+            progress.update(num_steps) # num_steps is batched now
 
             agent = state.agent
             critic_transitions = state.replay_buffer.get_all()
@@ -551,6 +566,7 @@ def run_training(
                 commit=False,
             )
 
+            # connor - should never get called, log_interval should always be > max steps for simplicity
             if state.steps_since_evaluation >= run_config.log_interval:
                 policy_return, undiscounted_return, _ = rollout_policy(
                     state.agent,

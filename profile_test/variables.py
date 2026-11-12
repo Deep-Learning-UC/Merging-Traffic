@@ -152,14 +152,15 @@ VIDEO = {
 
 MODEL = {
     "name": "DQN",
-    "library": "stable_baselines3",  # or "sb3_contrib"
+    # "library": "stable_baselines3",  # or "sb3_contrib"
+    "library": "ppo_plus_wrapper",
     "path": "trained/DQN.zip",  # main.py --model NAME overrides
 }
 
 TRAIN = {
     "show_ui": False,  # only used when train.py cant prompt
     # "models": ["DQN", "PPO", "A2C"],
-    "models": ["PPO"],
+    "models": ["PPOPlus"],
     "max_steps": 300_000,  # per model
     "goal_exit_rate": 0.9,  # stop early at this exit rate over last 100 lives
     "envs": 5,  # parallel envs per model
