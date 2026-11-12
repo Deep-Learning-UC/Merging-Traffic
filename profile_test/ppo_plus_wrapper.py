@@ -2,6 +2,8 @@
 a lot of this was generated from claude
 dude i don't understand like any of it
 
+i frankesteined it to work. i apologize in advance
+
 
 NOTES:
 i was able to figure it out
@@ -89,6 +91,7 @@ class PPOPlus:
     # ------------------------------------------------------------------ training
     def learn(self, total_timesteps, callback=None):
         print("PPO PLUS LEARN")
+        # run_training builds the agent and trains all in one. it's provided by the PPO+ repo
         state = run_training(
             learner_config=self.learner_config,
             # run_config=RunConfig(total_steps=300_000, buffer_size=50_000, policy_steps=5_000,
